@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { BotProfile, Cosmetic, PieceStyle, PieceEffect, Avatar, GameTheme, CosmeticType, Emoji } from '../types';
 import { useGameState } from '../context/GameStateContext';
-import { BOTS, ALL_COSMETICS, getXpForNextLevel } from '../constants';
+import { BOTS, ALL_COSMETICS, getXpForNextLevel, MUSIC_TRACKS } from '../constants';
 import Modal from './Modal';
 import { useSound } from '../hooks/useSound';
 
@@ -13,7 +13,7 @@ const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({
     const unownedItems = useMemo(() => {
         const potentialItems = ALL_COSMETICS.filter(c => !gameState.ownedCosmeticIds.includes(c.id) && c.price > 0);
         // If all items are owned, show a default cool item instead of nothing
-        return potentialItems.length > 0 ? potentialItems : [ALL_COSMETICS.find(c => c.id === 'boom_laser')!];
+        return potentialItems.length > 0 ? potentialItems : [ALL_COSMETICS.find(c => c.id === 'boom_rocket')!];
     }, [gameState.ownedCosmeticIds]);
 
     const [currentItemIndex, setCurrentItemIndex] = useState(() => (itemOffset % unownedItems.length));
@@ -179,7 +179,7 @@ interface MainMenuProps {
 
 const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInventory }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const { gameState, toggleSound, toggleMusic } = useGameState();
+  const { gameState, toggleSound, toggleMusic, equipMusic } = useGameState();
   const { playSound } = useSound();
 
   const handleChallengeClick = (bot: BotProfile) => {
@@ -200,6 +200,11 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
       playSound('click');
       toggleMusic();
   }
+  
+  const handleMusicSelect = (musicUrl: string) => {
+    playSound('click');
+    equipMusic(musicUrl);
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden relative">
@@ -251,25 +256,37 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
        </div>
 
         <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Settings">
-             <div className="text-white -mx-6 -mb-6 divide-y divide-slate-700">
-                <button
-                    onClick={handleToggleSound}
-                    className="w-full flex justify-between items-center px-6 py-4 hover:bg-slate-700/50 transition-colors"
-                >
-                    <span className="font-semibold text-slate-300">Sound:</span>
-                    <span className={`font-bold ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
-                        {gameState.isSoundOn ? 'ON' : 'OFF'}
-                    </span>
-                </button>
-                <button
-                    onClick={handleToggleMusic}
-                    className="w-full flex justify-between items-center px-6 py-4 hover:bg-slate-700/50 transition-colors"
-                >
-                    <span className="font-semibold text-slate-300">Music:</span>
-                    <span className={`font-bold ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
-                        {gameState.isMusicOn ? 'ON' : 'OFF'}
-                    </span>
-                </button>
+             <div className="text-white divide-y divide-slate-700 -mx-6 -my-6">
+                <div className="p-6">
+                    <button
+                        onClick={handleToggleSound}
+                        className="w-full flex justify-between items-center transition-colors"
+                    >
+                        <span className="font-semibold text-slate-300">Sound</span>
+                        <span className={`font-bold ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+                            {gameState.isSoundOn ? 'ON' : 'OFF'}
+                        </span>
+                    </button>
+                    <button
+                        onClick={handleToggleMusic}
+                        className="w-full flex justify-between items-center mt-4 transition-colors"
+                    >
+                        <span className="font-semibold text-slate-300">Music</span>
+                        <span className={`font-bold ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+                            {gameState.isMusicOn ? 'ON' : 'OFF'}
+                        </span>
+                    </button>
+                </div>
+                <div className="p-6">
+                    <h3 className="font-semibold text-slate-300 mb-3">Select Music</h3>
+                    <div className="space-y-2">
+                        {MUSIC_TRACKS.map(track => (
+                            <button key={track.id} onClick={() => handleMusicSelect(track.url)} className={`w-full text-left px-3 py-2 rounded-md transition-colors ${gameState.activeMusicUrl === track.url ? 'bg-cyan-500 text-black font-semibold' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                                {track.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
         </Modal>
     </div>

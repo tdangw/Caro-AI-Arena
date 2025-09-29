@@ -4,7 +4,7 @@ import { getAIMove } from '../services/geminiService';
 import { updateOpeningBook } from '../services/openingBook';
 import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import Modal from './Modal';
-import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, ALL_COSMETICS } from '../constants';
+import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, ALL_COSMETICS, MUSIC_TRACKS } from '../constants';
 import { useGameState } from '../context/GameStateContext';
 import { useSound } from '../hooks/useSound';
 
@@ -425,7 +425,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     const aiMark: Player = 'O';
 
     const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory } = useGameLogic(playerMark, isPaused);
-    const { gameState, toggleSound, toggleMusic, consumeEmoji } = useGameState();
+    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic } = useGameState();
     const { playSound } = useSound();
 
     const [aiThinkingCell, setAiThinkingCell] = useState<{row: number, col: number} | null>(null);
@@ -444,6 +444,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     const isAiThinkingRef = useRef(false);
     const playerAvatarRef = useRef<HTMLDivElement>(null);
     const botAvatarRef = useRef<HTMLDivElement>(null);
+
+    const botStats = gameState.botStats[bot.id] || { wins: 0, losses: 0, draws: 0 };
 
     const ownedEmojis = useMemo(() => {
         const ownedPermanentEmojiIds = new Set(
@@ -563,15 +565,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         }
     };
     
+    const handleMusicSelect = (musicUrl: string) => {
+        playSound('click');
+        equipMusic(musicUrl);
+    };
+    
     const allPieces = { X: pieces.X, O: aiPiece };
     const DecoratorComponent = theme.decoratorComponent;
     const VictoryComponent = activeVictoryEffect.component;
     const BoomComponent = activeBoomEffect.component;
     
-    const isLaserAndAiWins = activeBoomEffect.id === 'boom_laser' && winnerPlayer === aiMark;
-    const finalBoomWinnerCoords = isLaserAndAiWins ? boomCoords?.loser : boomCoords?.winner;
-    const finalBoomLoserCoords = isLaserAndAiWins ? boomCoords?.winner : boomCoords?.loser;
-
     return (
     <div className={`${theme.boardBg} min-h-screen p-2 sm:p-4 flex flex-col items-center justify-center font-sans transition-colors duration-500 relative overflow-hidden`}>
         {DecoratorComponent && <DecoratorComponent />}
@@ -605,10 +608,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                  <div className="flex justify-between items-end px-2 mb-[4px] -mt-px">
                     <PlayerInfo ref={playerAvatarRef} name={playerInfo.name} avatar={playerInfo.avatar.url} level={playerInfo.level} align="left" player="X" isCurrent={currentPlayer === playerMark} piece={pieces.X} />
                      <div className="text-center pb-1">
-                        <div className="text-white font-mono text-sm tracking-wider">
-                            <span className="text-green-400">{playerInfo.wins}W</span>
+                        <div className="text-white font-mono text-sm tracking-wider" title={`vs ${bot.name}`}>
+                            <span className="text-green-400">{botStats.wins}W</span>
                              - 
-                            <span className="text-red-400">{playerInfo.losses}L</span>
+                            <span className="text-red-400">{botStats.losses}L</span>
                         </div>
                         <div className="text-white font-mono text-lg tracking-wider">{formatTime(totalGameTime)}</div>
                     </div>
@@ -633,8 +636,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             <>
                 <VictoryComponent />
                 <BoomComponent 
-                    winnerCoords={finalBoomWinnerCoords}
-                    loserCoords={finalBoomLoserCoords}
+                    winnerCoords={boomCoords?.winner}
+                    loserCoords={boomCoords?.loser}
                 />
             </>
         )}
@@ -662,6 +665,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                             {gameState.isMusicOn ? 'ON' : 'OFF'}
                         </span>
                     </button>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-slate-300 mb-2 px-1">Select Music</h3>
+                    <div className="space-y-2">
+                        {MUSIC_TRACKS.map(track => (
+                            <button key={track.id} onClick={() => handleMusicSelect(track.url)} className={`w-full text-left px-3 py-2 rounded-md transition-colors ${gameState.activeMusicUrl === track.url ? 'bg-cyan-500 text-black font-semibold' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                                {track.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <button onClick={() => { onOpenShop(); setIsSettingsOpen(false); }} className="w-full bg-purple-600 hover:bg-purple-500 font-bold py-3 rounded-lg transition-colors">Shop</button>

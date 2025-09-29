@@ -27,17 +27,41 @@ const AppContent: React.FC = () => {
         }
     });
     const [overlay, setOverlay] = useState<Overlay>(null);
+    const [hasInteracted, setHasInteracted] = useState(false);
     const { gameState, addCoins, addXp, incrementWins, incrementLosses, incrementDraws } = useGameState();
     const { playSound, playMusic, stopMusic } = useSound();
 
+    // Effect to detect the first user interaction to allow audio playback, per browser policy.
     useEffect(() => {
-        // Play music on main menu and in game, stop elsewhere
-        if (view === 'menu' || view === 'game') {
-            playMusic();
-        } else {
-            stopMusic();
+        if (hasInteracted) return;
+
+        const handleFirstInteraction = () => {
+            setHasInteracted(true);
+        };
+        
+        // Listen for both click and keydown for comprehensive interaction detection.
+        // The { once: true } option automatically removes the listener after it fires.
+        window.addEventListener('click', handleFirstInteraction, { once: true });
+        window.addEventListener('keydown', handleFirstInteraction, { once: true });
+
+        return () => {
+            // Cleanup in case the component unmounts before interaction.
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('keydown', handleFirstInteraction);
+        };
+    }, [hasInteracted]);
+
+
+    useEffect(() => {
+        // Only attempt to control music if the user has interacted with the page.
+        if (hasInteracted) {
+            if (view === 'menu' || view === 'game') {
+                playMusic();
+            } else {
+                stopMusic();
+            }
         }
-    }, [view, playMusic, stopMusic]);
+    }, [view, playMusic, stopMusic, hasInteracted]);
 
     const handleStartGame = useCallback((bot: BotProfile) => {
         try {

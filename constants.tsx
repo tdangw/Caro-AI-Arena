@@ -1,5 +1,5 @@
 import React from 'react';
-import type { GameTheme, PieceStyle, Cosmetic, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect } from './types';
+import type { GameTheme, PieceStyle, Cosmetic, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect, MusicTrack } from './types';
 
 // --- Game Settings ---
 export const BOARD_SIZE = 15;
@@ -357,18 +357,18 @@ export const PIECE_EFFECTS: PieceEffect[] = [
 const DefaultVictoryPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-yellow-300"><path d="M50 10 L55 45 L90 50 L55 55 L50 90 L45 55 L10 50 L45 45 Z" fill="currentColor" /><path d="M20 20 L30 30 M70 30 L80 20 M70 70 L80 80 M20 80 L30 70" stroke="currentColor" strokeWidth="4" strokeLinecap="round" /></svg>);
 const ConfettiPreview: React.FC = () => (<svg viewBox="0 0 100 100"><g transform="translate(15 15) scale(0.7)"><rect x="10" y="20" width="15" height="8" fill="#34D399" transform="rotate(-30 17.5 24)" /><rect x="50" y="15" width="15" height="8" fill="#F472B6" transform="rotate(20 57.5 19)" /><rect x="70" y="60" width="15" height="8" fill="#60A5FA" transform="rotate(-10 77.5 64)" /><rect x="25" y="70" width="15" height="8" fill="#FBBF24" transform="rotate(40 32.5 74)" /></g></svg>);
 const FireworksPreview: React.FC = () => (<svg viewBox="0 0 100 100"><g strokeWidth="4" strokeLinecap="round"><path d="M50 50 L50 30" stroke="#F472B6" /><path d="M50 50 L70 50" stroke="#60A5FA" /><path d="M50 50 L30 50" stroke="#34D399" /><path d="M50 50 L50 70" stroke="#FBBF24" /></g></svg>);
-const TrophyPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-yellow-400"><path d="M25 20 C25 10 75 10 75 20 L75 40 C85 40 85 50 75 50 L70 80 L30 80 L25 50 C15 50 15 40 25 40 Z M40 90 L60 90" stroke="currentColor" strokeWidth="6" fill="currentColor" strokeLinejoin="round" strokeLinecap="round" /></svg>);
+const StarlightPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-yellow-300"><path d="M50 10 L55 45 L90 50 L55 55 L50 90 L45 55 L10 50 L45 45 Z" fill="none" stroke="currentColor" strokeWidth="4" /><text x="25" y="30" fontSize="30">✨</text><text x="75" y="75" fontSize="30">✨</text></svg>);
 
 // Boom Previews
 const HeartBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-pink-500"><path d="M10 50 L 90 50 M80 40 L90 50 L80 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><text x="50" y="55" textAnchor="middle" fontSize="30">❤️</text></svg>);
-const LaserBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-red-500"><path d="M10 50 L 90 50" stroke="url(#laserGradient)" strokeWidth="6" strokeLinecap="round" /><defs><linearGradient id="laserGradient"><stop offset="0%" stopColor="white" /><stop offset="100%" stopColor="currentColor" /></linearGradient></defs><circle cx="90" cy="50" r="8" fill="white" /></svg>);
+const RocketBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-orange-500"><path d="M10 50 L 90 50 M80 40 L90 50 L80 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><text x="50" y="55" textAnchor="middle" fontSize="30">🚀</text></svg>);
 const MagicMissilePreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-purple-500"><path d="M20 50 C 40 30, 60 70, 80 50" stroke="currentColor" strokeWidth="6" fill="none" /><circle cx="15" cy="50" r="8" fill="currentColor" /></svg>);
 
 // Victory Components
 const DefaultVictoryEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(30).fill(0).map((_, i) => (<div key={i} className="absolute w-2 h-2 bg-yellow-300 rounded-full animate-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />))}</div>);
 const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
-const FireworksEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(10)].map((_, i) => (<div key={i} className="absolute w-2 h-2 animate-firework" style={{ left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%`, animationDelay: `${i * 0.3}s` }}></div>))}</div>);
-const TrophyEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"><div className="w-48 h-48 text-yellow-400 animate-trophy-reveal"><TrophyPreview /></div></div>);
+const FireworksEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(12)].map((_, i) => (<div key={i} className="absolute animate-firework-container" style={{left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%`, animationDelay: `${i * 0.25}s`,}}>{[...Array(30)].map((_, p_i) => (<div key={p_i} className="absolute w-[3px] h-[3px] rounded-full animate-firework-particle" style={{'--firework-color': ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA'][p_i % 5], transform: `rotate(${p_i * (360/30)}deg)`} as React.CSSProperties}></div>))}</div>))}</div>);
+const StarlightEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(25).fill(0).map((_, i) => (<div key={i} className="animate-starlight" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, transform: `scale(${0.5 + Math.random() * 0.5})` }}>✨</div>))}</div>);
 
 // Boom Components
 const getCoords = (rect?: DOMRect) => rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : { x: 0, y: 0 };
@@ -378,13 +378,11 @@ const HeartBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect 
   if (!winnerCoords || !loserCoords) return null;
   return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute text-5xl animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>❤️</div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>;
 }
-const LaserBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
+const RocketBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
   const start = getCoords(winnerCoords);
   const end = getCoords(loserCoords);
   if (!winnerCoords || !loserCoords) return null;
-  const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
-  const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute h-2 animate-laser-beam" style={{left: `${start.x}px`, top: `${start.y}px`, width: `${distance}px`, transformOrigin: 'left center', transform: `rotate(${angle}deg)`}}></div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>
+  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute text-5xl animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>🚀</div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>;
 }
 const MagicMissileEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
   const start = getCoords(winnerCoords);
@@ -401,12 +399,14 @@ const getVictoryAndBoomStyles = () => `
   /* Victory: Confetti */
   @keyframes confetti-fall { from { transform: translateY(-100vh) rotate(0deg); } to { transform: translateY(100vh) rotate(1080deg); } }
   .animate-confetti { animation: confetti-fall linear infinite; }
-  /* Victory: Fireworks */
-  @keyframes firework-burst { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
-  .animate-firework { width: 40px; height: 40px; border-radius: 99px; background: radial-gradient(circle, white, transparent 70%); animation: firework-burst 0.8s ease-out; }
-  /* Victory: Trophy */
-  @keyframes trophy-reveal { 0% { transform: scale(0.5) rotate(-15deg); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px currentColor); } }
-  .animate-trophy-reveal { animation: trophy-reveal 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  /* Victory: Starlight */
+  @keyframes starlight-twinkle { 0%, 100% { transform: scale(0.5); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px currentColor); } }
+  .animate-starlight { position: absolute; color: #fef08a; font-size: 1.5rem; animation: starlight-twinkle 2s ease-in-out infinite; }
+  /* Victory: Fireworks (NEW) */
+  @keyframes firework-particle-burst { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(80px) scale(0); opacity: 0; } }
+  .animate-firework-particle { animation: firework-particle-burst 1s ease-out forwards; background-color: var(--firework-color); }
+  .animate-firework-container { opacity: 0; animation: firework-fade-in 0.1s linear forwards; animation-delay: inherit; }
+  @keyframes firework-fade-in { to { opacity: 1; } }
 
   /* Boom: Projectile Travel & Vanish (FIXED: Centered and vanishes on impact) */
   @keyframes boom-travel-vanish {
@@ -421,21 +421,21 @@ const getVictoryAndBoomStyles = () => `
   }
   
   /* Boom: Impact flash at destination */
-  @keyframes boom-impact-flash { from { transform: scale(0); opacity: 1; } to { transform: scale(3); opacity: 0; } }
+  @keyframes boom-impact-flash { 
+      0% { transform: translate(-50%,-50%) scale(0); opacity: 1; filter: brightness(1.5); } 
+      50% { filter: brightness(2.5); }
+      100% { transform: translate(-50%,-50%) scale(3); opacity: 0; filter: brightness(1); } 
+  }
   .animate-boom-impact {
     position: fixed;
     left: var(--end-x); top: var(--end-y);
-    width: 80px; height: 80px; border-radius: 99px;
-    background: radial-gradient(circle, white 0%, rgba(255,255,100,0.5) 40%, transparent 70%);
+    width: 100px; height: 100px; border-radius: 99px;
+    background: radial-gradient(circle, white 0%, #FFD700 40%, #FF8C00 70%, transparent 85%);
     transform: translate(-50%, -50%);
     opacity: 0;
-    animation: boom-impact-flash 0.3s ease-out forwards;
+    animation: boom-impact-flash 0.4s ease-out forwards;
     animation-delay: 0.85s; /* Delay until travel is almost complete */
   }
-  
-  /* Boom: Laser Specific */
-  @keyframes laser-shoot { 0% { width: 0; } 100% { width: 100%; } }
-  .animate-laser-beam { background: linear-gradient(90deg, white, #ff4d4d); animation: laser-shoot 0.2s ease-out forwards; }
 `;
 export const VictoryAndBoomStyles: React.FC = () => (<style>{getVictoryAndBoomStyles()}</style>);
 
@@ -445,12 +445,12 @@ export const DEFAULT_VICTORY_EFFECT: VictoryEffect = { id: 'victory_default', na
 export const VICTORY_EFFECTS: VictoryEffect[] = [
     { id: 'victory_confetti', name: 'Confetti', component: ConfettiEffect, previewComponent: ConfettiPreview },
     { id: 'victory_fireworks', name: 'Fireworks', component: FireworksEffect, previewComponent: FireworksPreview },
-    { id: 'victory_trophy', name: 'Trophy', component: TrophyEffect, previewComponent: TrophyPreview },
+    { id: 'victory_starlight', name: 'Starlight', component: StarlightEffect, previewComponent: StarlightPreview },
 ];
 
 export const DEFAULT_BOOM_EFFECT: BoomEffect = { id: 'boom_heart', name: 'Heart', component: HeartBoomEffect, previewComponent: HeartBoomPreview };
 export const BOOM_EFFECTS: BoomEffect[] = [
-    { id: 'boom_laser', name: 'Laser', component: LaserBoomEffect, previewComponent: LaserBoomPreview },
+    { id: 'boom_rocket', name: 'Rocket Barrage', component: RocketBoomEffect, previewComponent: RocketBoomPreview },
     { id: 'boom_missile', name: 'Magic Missile', component: MagicMissileEffect, previewComponent: MagicMissilePreview },
 ];
 
@@ -459,6 +459,13 @@ export const BOTS: BotProfile[] = [
     { id: 'bot_easy', name: 'Rookie', avatar: '/assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'A friendly bot that is still learning the ropes. Great for beginners.' },
     { id: 'bot_medium', name: 'Adept', avatar: '/assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'A seasoned player with a good grasp of strategy. Provides a solid challenge.' },
     { id: 'bot_hard', name: 'Master', avatar: '/assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'A grandmaster of Caro. Thinks several moves ahead. Defeat is likely.' },
+];
+
+// --- Music Tracks ---
+export const MUSIC_TRACKS: MusicTrack[] = [
+    { id: 'music_default', name: 'Celestial', url: '/assets/sounds/music.mp3' },
+    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_2.mp3' },
+    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_3.mp3' },
 ];
 
 // --- All Cosmetics for the Shop ---

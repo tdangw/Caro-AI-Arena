@@ -10,8 +10,6 @@ const soundFiles: Record<SoundEffect, string> = {
     click: '/assets/sounds/click.mp3',
 };
 
-const musicFile = '/assets/sounds/music.mp3';
-
 const audioCache = new Map<string, HTMLAudioElement>();
 
 const getAudio = (src: string, loop = false): HTMLAudioElement => {
@@ -24,6 +22,24 @@ const getAudio = (src: string, loop = false): HTMLAudioElement => {
     return audio;
 };
 
+// Helper to handle promise rejections from audio.play()
+const handlePlayPromise = (promise: Promise<void> | undefined, soundName: string, soundPath: string) => {
+    if (promise !== undefined) {
+        promise.catch((e: DOMException) => {
+            // Check for common error names and provide helpful, non-alarming logs.
+            if (e.name === 'NotAllowedError') {
+                // This is the autoplay error. It's a warning because we have logic to handle it.
+                console.warn(`Music playback was prevented because the user hasn't interacted with the page yet. It will start automatically after the first user action.`);
+            } else if (e.name === 'NotSupportedError') {
+                 // This is the "no source" error. It's a warning because the user is expected to add files locally.
+                 console.warn(`Audio file for "${soundName}" not found or format not supported. Please add the file to the path: ${soundPath}. See README.md for instructions.`);
+            } else {
+                // Log any other unexpected errors.
+                console.error(`Sound play failed for ${soundName}:`, e);
+            }
+        });
+    }
+};
 
 export const useSound = () => {
     const { gameState } = useGameState();
@@ -34,8 +50,8 @@ export const useSound = () => {
             try {
                 const audio = getAudio(soundFiles[sound]);
                 audio.currentTime = 0;
-                // play() returns a promise which can be rejected if the user hasn't interacted with the page yet.
-                audio.play().catch(e => console.error(`Sound play failed for ${sound}:`, e));
+                const promise = audio.play();
+                handlePlayPromise(promise, sound, soundFiles[sound]);
             } catch (error) {
                 console.error(`Could not play sound ${sound}:`, error);
             }
@@ -45,15 +61,21 @@ export const useSound = () => {
     const playMusic = useCallback(() => {
         if (gameState.isMusicOn) {
             try {
-                if (!musicPlayerRef.current) {
-                    musicPlayerRef.current = getAudio(musicFile, true);
+                // If track changes or no player exists, create a new one
+                const currentTrackUrl = new URL(gameState.activeMusicUrl, window.location.origin).href;
+                if (!musicPlayerRef.current || musicPlayerRef.current.src !== currentTrackUrl) {
+                     if (musicPlayerRef.current) {
+                        musicPlayerRef.current.pause();
+                    }
+                    musicPlayerRef.current = getAudio(gameState.activeMusicUrl, true);
                 }
-                musicPlayerRef.current.play().catch(e => console.error("Music play failed:", e));
+                const promise = musicPlayerRef.current.play();
+                handlePlayPromise(promise, 'music', gameState.activeMusicUrl);
             } catch (error) {
                 console.error("Could not play music:", error)
             }
         }
-    }, [gameState.isMusicOn]);
+    }, [gameState.isMusicOn, gameState.activeMusicUrl]);
 
     const stopMusic = useCallback(() => {
         if (musicPlayerRef.current) {
@@ -63,11 +85,12 @@ export const useSound = () => {
     }, []);
 
     useEffect(() => {
-        // This effect ensures music stops immediately if toggled off in settings.
+        // This effect ensures music stops immediately if toggled off in settings,
+        // or if the track is changed while music is off.
         if (!gameState.isMusicOn) {
             stopMusic();
         }
-    }, [gameState.isMusicOn, stopMusic]);
+    }, [gameState.isMusicOn, gameState.activeMusicUrl, stopMusic]);
 
     return { playSound, playMusic, stopMusic };
 };

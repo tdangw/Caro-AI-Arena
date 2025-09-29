@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect, VictoryEffect, BoomEffect } from '../types';
-import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS } from '../constants';
+import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS, MUSIC_TRACKS } from '../constants';
 
 const DEFAULT_EMOJI_IDS = ALL_COSMETICS.filter(c => c.type === 'emoji' && c.price === 0).map(c => c.id);
 
@@ -24,6 +24,7 @@ interface GameState {
   activeBoomEffect: BoomEffect;
   isSoundOn: boolean;
   isMusicOn: boolean;
+  activeMusicUrl: string;
 }
 
 interface GameStateContextType {
@@ -44,11 +45,12 @@ interface GameStateContextType {
   equipBoomEffect: (effect: BoomEffect) => void;
   toggleSound: () => void;
   toggleMusic: () => void;
+  equipMusic: (musicUrl: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'caroGameState_v7'; // Version bump for bot stats
+const LOCAL_STORAGE_KEY = 'caroGameState_v8'; // Version bump for music selection
 
 // Helper to avoid storing React components in JSON
 const sanitizeCosmetic = (cosmetic: any) => {
@@ -77,6 +79,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
           activeBoomEffect: { ...DEFAULT_BOOM_EFFECT, ...parsed.activeBoomEffect },
           isSoundOn: parsed.isSoundOn ?? true,
           isMusicOn: parsed.isMusicOn ?? true,
+          activeMusicUrl: parsed.activeMusicUrl ?? MUSIC_TRACKS[0].url,
           emojiInventory: parsed.emojiInventory ?? {},
           botStats: parsed.botStats ?? {},
           draws: parsed.draws ?? 0,
@@ -105,6 +108,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
       activeBoomEffect: DEFAULT_BOOM_EFFECT,
       isSoundOn: true,
       isMusicOn: true,
+      activeMusicUrl: MUSIC_TRACKS[0].url,
     };
   });
 
@@ -275,8 +279,12 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
     setGameState(prev => ({ ...prev, isMusicOn: !prev.isMusicOn }));
   }, []);
 
+  const equipMusic = useCallback((musicUrl: string) => {
+    setGameState(prev => ({ ...prev, activeMusicUrl: musicUrl }));
+  }, []);
+
   return (
-    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, incrementDraws, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic }}>
+    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, incrementDraws, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic, equipMusic }}>
       {children}
     </GameStateContext.Provider>
   );

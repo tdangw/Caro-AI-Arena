@@ -72,3 +72,9 @@ export interface BotProfile {
     skillLevel: 'easy' | 'medium' | 'hard';
     description: string;
 }
+
+export interface MusicTrack {
+  id: string;
+  name: string;
+  url: string;
+}
