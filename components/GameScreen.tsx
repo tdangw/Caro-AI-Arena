@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { getAIMove } from '../services/aiService';
@@ -458,8 +457,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         }
     };
     
-    useEffect(() => { startGame(); }, [startGame]);
-
     useEffect(() => {
         if (!isDecidingFirst && bot && currentPlayer === aiMark && !isGameOver && !isAiThinkingRef.current) {
             isAiThinkingRef.current = true;
