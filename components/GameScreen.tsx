@@ -300,10 +300,10 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
                 </div>
 
                 <div className="mt-8 space-y-3">
-                    <button onClick={() => onReset()} className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg transition-colors text-lg">
+                    <button onClick={onReset} className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg transition-colors text-lg">
                         Play again!
                     </button>
-                    <button onClick={() => onExit()} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                    <button onClick={onExit} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                         Leave room ({leaveCountdown})
                     </button>
                 </div>
