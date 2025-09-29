@@ -1,4 +1,3 @@
-
 import type React from 'react';
 
 export type Player = 'X' | 'O';
@@ -29,10 +28,24 @@ export interface PieceEffect {
   previewComponent: React.FC;
 }
 
+export interface VictoryEffect {
+  id: string;
+  name: string;
+  component: React.FC;
+  previewComponent: React.FC;
+}
+
+export interface BoomEffect {
+  id: string;
+  name: string;
+  component: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }>;
+  previewComponent: React.FC;
+}
+
 export interface Avatar {
     id: string;
     name: string;
-    component: React.FC<{ className?: string }>;
+    url: string; // Changed from component to url for image path
 }
 
 export interface Emoji {
@@ -41,20 +54,20 @@ export interface Emoji {
     emoji: string;
 }
 
-export type CosmeticType = 'theme' | 'piece' | 'avatar' | 'emoji' | 'effect';
+export type CosmeticType = 'theme' | 'piece' | 'avatar' | 'emoji' | 'effect' | 'victory' | 'boom';
 
 export interface Cosmetic {
   id: string;
   name: string;
   type: CosmeticType;
   price: number;
-  item: GameTheme | PieceStyle | Avatar | Emoji | PieceEffect;
+  item: GameTheme | PieceStyle | Avatar | Emoji | PieceEffect | VictoryEffect | BoomEffect;
 }
 
 export interface BotProfile {
     id: string;
     name: string;
-    avatar: string; // This is emoji/string based
+    avatar: string; // This is now an image URL
     level: number;
     skillLevel: 'easy' | 'medium' | 'hard';
     description: string;

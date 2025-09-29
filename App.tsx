@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import MainMenu from './components/MainMenu';
 import GameScreen from './components/GameScreen';
 import Shop from './components/Shop';
@@ -6,6 +6,7 @@ import Inventory from './components/Inventory';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
 import type { BotProfile } from './types';
 import { COIN_REWARD, XP_REWARD } from './constants';
+import { useSound } from './hooks/useSound';
 
 type View = 'menu' | 'game' | 'shop' | 'inventory';
 type Overlay = 'shop' | 'inventory' | null;
@@ -26,47 +27,79 @@ const AppContent: React.FC = () => {
         }
     });
     const [overlay, setOverlay] = useState<Overlay>(null);
-    const { gameState, addCoins, addXp, incrementWins, incrementLosses } = useGameState();
+    const { gameState, addCoins, addXp, incrementWins, incrementLosses, incrementDraws } = useGameState();
+    const { playSound, playMusic, stopMusic } = useSound();
+
+    useEffect(() => {
+        // Play music on main menu and in game, stop elsewhere
+        if (view === 'menu' || view === 'game') {
+            playMusic();
+        } else {
+            stopMusic();
+        }
+    }, [view, playMusic, stopMusic]);
 
     const handleStartGame = useCallback((bot: BotProfile) => {
         try {
+            playSound('click');
             localStorage.setItem(ACTIVE_GAME_BOT_KEY, JSON.stringify(bot));
             setActiveBot(bot);
             setView('game');
         } catch (error) {
             console.error("Failed to save active bot:", error);
         }
-    }, []);
+    }, [playSound]);
 
-    const handleGoToShop = useCallback(() => setView('shop'), []);
-    const handleGoToInventory = useCallback(() => setView('inventory'), []);
+    const handleGoToShop = useCallback(() => {
+        playSound('click');
+        setView('shop');
+    }, [playSound]);
+    const handleGoToInventory = useCallback(() => {
+        playSound('click');
+        setView('inventory');
+    }, [playSound]);
+    
     const handleBackToMenu = useCallback(() => {
+        playSound('click');
         setView('menu');
         setActiveBot(null);
         setOverlay(null);
         localStorage.removeItem(ACTIVE_GAME_BOT_KEY);
         localStorage.removeItem('caroGameState_inProgress'); 
-    }, []);
+    }, [playSound]);
 
-    const handleOpenShopOverlay = () => setOverlay('shop');
-    const handleOpenInventoryOverlay = () => setOverlay('inventory');
-    const handleCloseOverlay = () => setOverlay(null);
+    const handleOpenShopOverlay = () => {
+        playSound('click');
+        setOverlay('shop');
+    }
+    const handleOpenInventoryOverlay = () => {
+        playSound('click');
+        setOverlay('inventory');
+    }
+    const handleCloseOverlay = () => {
+        playSound('click');
+        setOverlay(null);
+    }
     
     const handleGameEnd = useCallback((result: 'win' | 'loss' | 'draw') => {
+        const botId = activeBot?.id;
+        if (!botId) return; // Should not happen if in game view
+
         setOverlay(null); // Close any overlays when game ends
         if (result === 'win') {
             addCoins(COIN_REWARD.win);
             addXp(XP_REWARD.win);
-            incrementWins();
+            incrementWins(botId);
         } else if (result === 'draw') {
             addCoins(COIN_REWARD.draw);
             addXp(XP_REWARD.draw);
+            incrementDraws(botId);
         } else { // Loss
             addCoins(COIN_REWARD.loss);
             addXp(XP_REWARD.loss);
-            incrementLosses();
+            incrementLosses(botId);
         }
-    }, [addCoins, addXp, incrementWins, incrementLosses]);
+    }, [addCoins, addXp, incrementWins, incrementLosses, incrementDraws, activeBot]);
 
     const renderView = () => {
         switch (view) {

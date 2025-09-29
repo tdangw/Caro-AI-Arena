@@ -49,10 +49,6 @@ const Eye: React.FC<{ className?: string }> = ({ className }) => (<svg className
 const Fire: React.FC<{ className?: string }> = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.5c-3.1 0-5.4 2.3-5.4 5.4 0 2 .9 3.7 2.3 4.7-1.3 1.1-2.2 2.7-2.2 4.5 0 3.2 2.6 5.8 5.8 5.8s5.8-2.6 5.8-5.8c0-1.9-.9-3.5-2.2-4.5 1.4-1 2.3-2.7 2.3-4.7 0-3.1-2.3-5.4-5.4-5.4z"/></svg>);
 const Flag: React.FC<{ className?: string }> = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/></svg>);
 
-const Avatar1: React.FC<{ className?: string }> = ({ className }) => (<img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="avatar" className={`rounded-full ${className}`} />);
-const Avatar2: React.FC<{ className?: string }> = ({ className }) => (<img src="https://i.pravatar.cc/150?u=a042581f4e29026705d" alt="avatar" className={`rounded-full ${className}`} />);
-const Avatar3: React.FC<{ className?: string }> = ({ className }) => (<img src="https://i.pravatar.cc/150?u=a042581f4e29026706d" alt="avatar" className={`rounded-full ${className}`} />);
-
 
 // --- Theme Decorators ---
 const IceThemeDecorator: React.FC = React.memo(() => (
@@ -215,10 +211,12 @@ export const PIECE_STYLES: PieceStyle[] = [
 ];
 
 // --- Avatars ---
-export const DEFAULT_AVATAR: Avatar = { id: 'avatar_default', name: 'Guest', component: Avatar1 };
+export const DEFAULT_AVATAR: Avatar = { id: 'avatar_default', name: 'Guest', url: '/assets/avatars/avatar_1.png' };
 export const AVATARS: Avatar[] = [
-    { id: 'avatar_2', name: 'Rebel', component: Avatar2 },
-    { id: 'avatar_3', name: 'Scholar', component: Avatar3 },
+    { id: 'avatar_2', name: 'Rebel', url: '/assets/avatars/avatar_2.png' },
+    { id: 'avatar_3', name: 'Scholar', url: '/assets/avatars/avatar_3.png' },
+    { id: 'avatar_4', name: 'Ninja', url: '/assets/avatars/avatar_4.png' },
+    { id: 'avatar_5', name: 'Knight', url: '/assets/avatars/avatar_5.png' },
 ];
 
 // --- Emojis ---
@@ -378,7 +376,7 @@ const HeartBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect 
   const start = getCoords(winnerCoords);
   const end = getCoords(loserCoords);
   if (!winnerCoords || !loserCoords) return null;
-  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute text-5xl animate-boom-travel" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>❤️</div><div className="absolute animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>;
+  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute text-5xl animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>❤️</div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>;
 }
 const LaserBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
   const start = getCoords(winnerCoords);
@@ -386,136 +384,103 @@ const LaserBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect 
   if (!winnerCoords || !loserCoords) return null;
   const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
   const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute h-2 animate-laser-beam" style={{left: `${start.x}px`, top: `${start.y}px`, width: `${distance}px`, transformOrigin: 'left center', transform: `rotate(${angle}deg)`}}></div><div className="absolute animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>
+  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute h-2 animate-laser-beam" style={{left: `${start.x}px`, top: `${start.y}px`, width: `${distance}px`, transformOrigin: 'left center', transform: `rotate(${angle}deg)`}}></div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>
 }
 const MagicMissileEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
   const start = getCoords(winnerCoords);
   const end = getCoords(loserCoords);
   if (!winnerCoords || !loserCoords) return null;
-  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute w-8 h-8 rounded-full bg-purple-500 animate-boom-travel" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div><div className="absolute animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>;
+  return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute w-8 h-8 rounded-full bg-purple-500 animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>
 }
-
 
 // Styles for Victory and Boom effects
 const getVictoryAndBoomStyles = () => `
+  /* Victory: Default Particle Burst */
+  @keyframes particle { 0% { transform: scale(1) translateY(0); opacity: 1; } 100% { transform: scale(0) translateY(-100px); opacity: 0; } }
+  .animate-particle { animation: particle 2s ease-out forwards; }
   /* Victory: Confetti */
-  @keyframes confetti-fall {
-    0% { transform: translateY(-10vh) rotate(0deg); }
-    100% { transform: translateY(110vh) rotate(720deg); }
-  }
+  @keyframes confetti-fall { from { transform: translateY(-100vh) rotate(0deg); } to { transform: translateY(100vh) rotate(1080deg); } }
   .animate-confetti { animation: confetti-fall linear infinite; }
-
   /* Victory: Fireworks */
-  @keyframes firework-burst {
-    0% {
-      transform: scale(0);
-      opacity: 1;
-      box-shadow: 0 0 0 0 transparent;
-    }
-    100% {
-      transform: scale(1.5);
-      opacity: 0;
-      box-shadow: 
-        0 -50px 0 0 #F472B6, 50px 0 0 0 #60A5FA, 0 50px 0 0 #FBBF24, -50px 0 0 0 #34D399,
-        35px -35px 0 0 #FBBF24, 35px 35px 0 0 #F472B6, -35px 35px 0 0 #60A5FA, -35px -35px 0 0 #34D399;
-    }
-  }
-  .animate-firework { border-radius: 50%; animation: firework-burst 1.2s ease-out forwards; }
-  
+  @keyframes firework-burst { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+  .animate-firework { width: 40px; height: 40px; border-radius: 99px; background: radial-gradient(circle, white, transparent 70%); animation: firework-burst 0.8s ease-out; }
   /* Victory: Trophy */
-  @keyframes trophy-reveal {
-    0% { transform: scale(0.5) rotate(-15deg); opacity: 0; filter: drop-shadow(0 0 5px #fff); }
-    40% { transform: scale(1.1) rotate(10deg); opacity: 1; filter: drop-shadow(0 0 30px #fef08a); }
-    70% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px #fde047); }
-    100% { transform: scale(0.95) rotate(5deg); opacity: 0; filter: drop-shadow(0 0 10px #fde047); }
-  }
-  .animate-trophy-reveal { animation: trophy-reveal 3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; animation-delay: 0.2s; }
-  
-  /* Boom: Travel & Impact */
-  @keyframes boom-travel {
-    from { left: var(--start-x); top: var(--start-y); opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
-    to { left: var(--end-x); top: var(--end-y); opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-  }
-  .animate-boom-travel { animation: boom-travel 0.5s ease-in forwards; }
+  @keyframes trophy-reveal { 0% { transform: scale(0.5) rotate(-15deg); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px currentColor); } }
+  .animate-trophy-reveal { animation: trophy-reveal 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-  @keyframes boom-impact {
-    0% { left: var(--end-x); top: var(--end-y); transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    100% { left: var(--end-x); top: var(--end-y); transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  /* Boom: Projectile Travel & Vanish (FIXED: Centered and vanishes on impact) */
+  @keyframes boom-travel-vanish {
+    0% { transform: translate(var(--start-x), var(--start-y)) translate(-50%, -50%) scale(0.5); opacity: 0; }
+    10% { transform: translate(var(--start-x), var(--start-y)) translate(-50%, -50%) scale(1); opacity: 1; }
+    89% { transform: translate(var(--end-x), var(--end-y)) translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(var(--end-x), var(--end-y)) translate(-50%, -50%) scale(1.5); opacity: 0; }
   }
-  .animate-boom-impact {
-    width: 150px; height: 150px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
-    animation: boom-impact 0.4s ease-out forwards;
-    animation-delay: 0.5s;
+  .animate-boom-travel-vanish {
+    position: fixed; top: 0; left: 0;
+    animation: boom-travel-vanish 1s ease-in-out forwards;
   }
   
-  /* Boom: Laser */
-  @keyframes laser-beam-anim {
-      0% { transform: scaleX(0); opacity: 0.5; }
-      10% { transform: scaleX(1); opacity: 1; }
-      90% { transform: scaleX(1); opacity: 1; }
-      100% { transform: scaleX(1); opacity: 0; }
+  /* Boom: Impact flash at destination */
+  @keyframes boom-impact-flash { from { transform: scale(0); opacity: 1; } to { transform: scale(3); opacity: 0; } }
+  .animate-boom-impact {
+    position: fixed;
+    left: var(--end-x); top: var(--end-y);
+    width: 80px; height: 80px; border-radius: 99px;
+    background: radial-gradient(circle, white 0%, rgba(255,255,100,0.5) 40%, transparent 70%);
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: boom-impact-flash 0.3s ease-out forwards;
+    animation-delay: 0.85s; /* Delay until travel is almost complete */
   }
-  .animate-laser-beam {
-      background: linear-gradient(90deg, transparent, #fff, #f87171);
-      transform-origin: left;
-      animation: laser-beam-anim 0.6s linear forwards;
-  }
+  
+  /* Boom: Laser Specific */
+  @keyframes laser-shoot { 0% { width: 0; } 100% { width: 100%; } }
+  .animate-laser-beam { background: linear-gradient(90deg, white, #ff4d4d); animation: laser-shoot 0.2s ease-out forwards; }
 `;
 export const VictoryAndBoomStyles: React.FC = () => (<style>{getVictoryAndBoomStyles()}</style>);
 
 
-// Victory Effects Definitions
-export const DEFAULT_VICTORY_EFFECT: VictoryEffect = { id: 'victory_default', name: 'Sparkle Burst', component: DefaultVictoryEffect, previewComponent: DefaultVictoryPreview };
+// Define and export Victory/Boom effects
+export const DEFAULT_VICTORY_EFFECT: VictoryEffect = { id: 'victory_default', name: 'Glimmer', component: DefaultVictoryEffect, previewComponent: DefaultVictoryPreview };
 export const VICTORY_EFFECTS: VictoryEffect[] = [
-    { id: 'victory_confetti', name: 'Confetti Rain', component: ConfettiEffect, previewComponent: ConfettiPreview },
+    { id: 'victory_confetti', name: 'Confetti', component: ConfettiEffect, previewComponent: ConfettiPreview },
     { id: 'victory_fireworks', name: 'Fireworks', component: FireworksEffect, previewComponent: FireworksPreview },
     { id: 'victory_trophy', name: 'Trophy', component: TrophyEffect, previewComponent: TrophyPreview },
 ];
 
-// Boom Effects Definitions
 export const DEFAULT_BOOM_EFFECT: BoomEffect = { id: 'boom_heart', name: 'Heart', component: HeartBoomEffect, previewComponent: HeartBoomPreview };
 export const BOOM_EFFECTS: BoomEffect[] = [
-    { id: 'boom_laser', name: 'Laser Beam', component: LaserBoomEffect, previewComponent: LaserBoomPreview },
-    { id: 'boom_magic', name: 'Magic Missile', component: MagicMissileEffect, previewComponent: MagicMissilePreview },
+    { id: 'boom_laser', name: 'Laser', component: LaserBoomEffect, previewComponent: LaserBoomPreview },
+    { id: 'boom_missile', name: 'Magic Missile', component: MagicMissileEffect, previewComponent: MagicMissilePreview },
 ];
 
-
-// --- All Cosmetics ---
-export const ALL_COSMETICS: Cosmetic[] = [
-    ...PIECE_STYLES.map((p, i) => ({ id: p.id, name: p.name, type: 'piece' as const, price: i < 7 ? 300 : 400, item: p })),
-    ...AVATARS.map(a => ({ id: a.id, name: a.name, type: 'avatar' as const, price: 500, item: a})),
-    ...EMOJIS.map((e,i) => ({ id: e.id, name: e.name, type: 'emoji' as const, price: i < 6 ? 0 : 150, item: e })),
-    ...THEMES.map(t => ({ id: t.id, name: t.name, type: 'theme' as const, price: 1000, item: t })),
-    ...PIECE_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'effect' as const, price: 750, item: e })),
-    ...VICTORY_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'victory' as const, price: 1200, item: e })),
-    ...BOOM_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'boom' as const, price: 900, item: e })),
-];
-
-// --- Bot Profiles ---
+// --- AI Bot Profiles ---
 export const BOTS: BotProfile[] = [
-    {
-        id: 'bot_rookie',
-        name: 'Easy AI',
-        avatar: 'https://i.pravatar.cc/150?u=easy_ai',
-        level: 2,
-        skillLevel: 'easy',
-        description: 'A friendly bot just learning the ropes. A great first challenge.'
-    },
-    {
-        id: 'bot_master',
-        name: 'Medium AI',
-        avatar: 'https://i.pravatar.cc/150?u=medium_ai',
-        level: 5,
-        skillLevel: 'medium',
-        description: 'A seasoned player. Thinks a few moves ahead. Can you outsmart it?'
-    },
-    {
-        id: 'bot_grandmaster',
-        name: 'Hard AI',
-        avatar: 'https://i.pravatar.cc/150?u=hard_ai',
-        level: 10,
-        skillLevel: 'hard',
-        description: 'An expert strategist. Makes very few mistakes. A true test of skill.'
-    }
+    { id: 'bot_easy', name: 'Rookie', avatar: '/assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'A friendly bot that is still learning the ropes. Great for beginners.' },
+    { id: 'bot_medium', name: 'Adept', avatar: '/assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'A seasoned player with a good grasp of strategy. Provides a solid challenge.' },
+    { id: 'bot_hard', name: 'Master', avatar: '/assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'A grandmaster of Caro. Thinks several moves ahead. Defeat is likely.' },
+];
+
+// --- All Cosmetics for the Shop ---
+export const ALL_COSMETICS: Cosmetic[] = [
+  // Themes
+  { id: DEFAULT_THEME.id, name: DEFAULT_THEME.name, type: 'theme', price: 0, item: DEFAULT_THEME },
+  ...THEMES.map(item => ({ id: item.id, name: item.name, type: 'theme' as const, price: 500, item })),
+  // Avatars
+  { id: DEFAULT_AVATAR.id, name: DEFAULT_AVATAR.name, type: 'avatar', price: 0, item: DEFAULT_AVATAR },
+  ...AVATARS.map(item => ({ id: item.id, name: item.name, type: 'avatar' as const, price: 300, item })),
+  // Pieces (Skins)
+  { id: DEFAULT_PIECES_X.id, name: DEFAULT_PIECES_X.name, type: 'piece', price: 0, item: DEFAULT_PIECES_X },
+  ...PIECE_STYLES.map(item => ({ id: item.id, name: item.name, type: 'piece' as const, price: 250, item })),
+  // Effects
+  { id: DEFAULT_EFFECT.id, name: DEFAULT_EFFECT.name, type: 'effect', price: 0, item: DEFAULT_EFFECT },
+  ...PIECE_EFFECTS.map(item => ({ id: item.id, name: item.name, type: 'effect' as const, price: 400, item })),
+  // Victory Effects
+  { id: DEFAULT_VICTORY_EFFECT.id, name: DEFAULT_VICTORY_EFFECT.name, type: 'victory', price: 0, item: DEFAULT_VICTORY_EFFECT },
+  ...VICTORY_EFFECTS.map(item => ({ id: item.id, name: item.name, type: 'victory' as const, price: 750, item })),
+  // Boom Effects
+  { id: DEFAULT_BOOM_EFFECT.id, name: DEFAULT_BOOM_EFFECT.name, type: 'boom', price: 0, item: DEFAULT_BOOM_EFFECT },
+  ...BOOM_EFFECTS.map(item => ({ id: item.id, name: item.name, type: 'boom' as const, price: 1000, item })),
+  // Emojis
+  ...EMOJIS.map((item, index) => ({ id: item.id, name: item.name, type: 'emoji' as const, price: index < 6 ? 0 : 50, item })),
 ];

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect, VictoryEffect, BoomEffect, Emoji } from '../types';
+import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS } from '../constants';
 
 const DEFAULT_EMOJI_IDS = ALL_COSMETICS.filter(c => c.type === 'emoji' && c.price === 0).map(c => c.id);
@@ -9,10 +9,12 @@ interface GameState {
   playerName: string;
   wins: number;
   losses: number;
+  draws: number;
   playerLevel: number;
   playerXp: number;
   ownedCosmeticIds: string[];
   emojiInventory: Record<string, number>; // For consumable emojis
+  botStats: Record<string, { wins: number; losses: number; draws: number; }>; // BotId -> stats
   activeTheme: GameTheme;
   activePieceX: PieceStyle;
   activePieceO: PieceStyle;
@@ -27,8 +29,9 @@ interface GameState {
 interface GameStateContextType {
   gameState: GameState;
   setPlayerName: (name: string) => void;
-  incrementWins: () => void;
-  incrementLosses: () => void;
+  incrementWins: (botId: string) => void;
+  incrementLosses: (botId: string) => void;
+  incrementDraws: (botId: string) => void;
   addCoins: (amount: number) => void;
   addXp: (amount: number) => void;
   purchaseCosmetic: (cosmetic: Cosmetic) => boolean;
@@ -45,7 +48,7 @@ interface GameStateContextType {
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'caroGameState_v6'; // Version bump for new emoji inventory
+const LOCAL_STORAGE_KEY = 'caroGameState_v7'; // Version bump for bot stats
 
 // Helper to avoid storing React components in JSON
 const sanitizeCosmetic = (cosmetic: any) => {
@@ -75,20 +78,24 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
           isSoundOn: parsed.isSoundOn ?? true,
           isMusicOn: parsed.isMusicOn ?? true,
           emojiInventory: parsed.emojiInventory ?? {},
+          botStats: parsed.botStats ?? {},
+          draws: parsed.draws ?? 0,
         };
       }
     } catch (error) {
       console.error("Failed to parse game state from localStorage", error);
     }
     return {
-      coins: 1000,
+      coins: 10000, // Increased for testing
       playerName: `Player_${Math.floor(1000 + Math.random() * 9000)}`,
       wins: 0,
       losses: 0,
+      draws: 0,
       playerLevel: 1,
       playerXp: 0,
       ownedCosmeticIds: [DEFAULT_THEME.id, DEFAULT_PIECES_X.id, DEFAULT_PIECES_O.id, DEFAULT_AVATAR.id, DEFAULT_EFFECT.id, DEFAULT_VICTORY_EFFECT.id, DEFAULT_BOOM_EFFECT.id, ...DEFAULT_EMOJI_IDS],
       emojiInventory: {},
+      botStats: {},
       activeTheme: DEFAULT_THEME,
       activePieceX: DEFAULT_PIECES_X,
       activePieceO: DEFAULT_PIECES_O,
@@ -123,12 +130,31 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
     setGameState(prev => ({...prev, playerName: name}));
   }, []);
 
-  const incrementWins = useCallback(() => {
-    setGameState(prev => ({...prev, wins: prev.wins + 1}));
+  const incrementWins = useCallback((botId: string) => {
+    setGameState(prev => {
+        const newBotStats = { ...prev.botStats };
+        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
+        newBotStats[botId].wins += 1;
+        return { ...prev, wins: prev.wins + 1, botStats: newBotStats };
+    });
   }, []);
   
-  const incrementLosses = useCallback(() => {
-    setGameState(prev => ({...prev, losses: prev.losses + 1}));
+  const incrementLosses = useCallback((botId: string) => {
+    setGameState(prev => {
+        const newBotStats = { ...prev.botStats };
+        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
+        newBotStats[botId].losses += 1;
+        return { ...prev, losses: prev.losses + 1, botStats: newBotStats };
+    });
+  }, []);
+  
+  const incrementDraws = useCallback((botId: string) => {
+    setGameState(prev => {
+        const newBotStats = { ...prev.botStats };
+        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
+        newBotStats[botId].draws += 1;
+        return { ...prev, draws: prev.draws + 1, botStats: newBotStats };
+    });
   }, []);
 
   const addCoins = useCallback((amount: number) => {
@@ -250,7 +276,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
 
   return (
-    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic }}>
+    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, incrementDraws, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic }}>
       {children}
     </GameStateContext.Provider>
   );

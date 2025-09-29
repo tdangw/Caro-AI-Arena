@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import { ALL_COSMETICS, DEFAULT_PIECES_X, DEFAULT_AVATAR, DEFAULT_THEME, DEFAULT_EFFECT, PIECE_STYLES, AVATARS, EMOJIS, THEMES, PIECE_EFFECTS, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, VICTORY_EFFECTS, BOOM_EFFECTS } from '../constants';
 import { useGameState } from '../context/GameStateContext';
+import { useSound } from '../hooks/useSound';
 
 type InventoryCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects' | 'Victory' | 'Booms';
 
 const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { gameState, equipPiece, equipAvatar, equipTheme, equipEffect, equipVictoryEffect, equipBoomEffect } = useGameState();
+  const { playSound } = useSound();
   const [activeTab, setActiveTab] = useState<InventoryCategory>('Skins');
 
   const cosmeticTypeMap: Record<InventoryCategory, 'piece' | 'avatar' | 'emoji' | 'theme' | 'effect' | 'victory' | 'boom'> = {
@@ -63,8 +65,7 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               return <PieceComp className="w-16 h-16 text-cyan-300" />;
           }
           case 'avatar': {
-              const AvatarComp = (cosmetic.item as Avatar).component;
-              return <AvatarComp className="w-16 h-16" />;
+              return <img src={(cosmetic.item as Avatar).url} alt={cosmetic.name} className="w-16 h-16 rounded-full object-cover bg-slate-700" />;
           }
           case 'emoji':
               return <span className="text-4xl">{(cosmetic.item as Emoji).emoji}</span>
@@ -112,6 +113,7 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     const ownedEmojiCount = gameState.emojiInventory[cosmetic.id] || 0;
                                     
                     const handleEquip = () => {
+                        playSound('click');
                         if (cosmetic.type === 'piece') {
                             equipPiece(cosmetic.item as PieceStyle);
                         } else if (cosmetic.type === 'avatar') {

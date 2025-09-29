@@ -3,11 +3,13 @@ import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect, Victo
 import { ALL_COSMETICS } from '../constants';
 import { useGameState } from '../context/GameStateContext';
 import Modal from './Modal';
+import { useSound } from '../hooks/useSound';
 
 type ShopCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects' | 'Victory' | 'Booms';
 
 const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { gameState, purchaseCosmetic } = useGameState();
+  const { playSound } = useSound();
   const [activeTab, setActiveTab] = useState<ShopCategory>('Skins');
   const [confirmingPurchase, setConfirmingPurchase] = useState<Cosmetic | null>(null);
 
@@ -22,9 +24,17 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
   
   const handlePurchase = (cosmetic: Cosmetic) => {
-    purchaseCosmetic(cosmetic);
+    playSound('click');
+    if(purchaseCosmetic(cosmetic)) {
+      // Potentially play a success sound
+    }
     setConfirmingPurchase(null);
   };
+
+  const handleConfirmClick = (cosmetic: Cosmetic) => {
+    playSound('click');
+    setConfirmingPurchase(cosmetic);
+  }
   
   const filteredCosmetics = ALL_COSMETICS.filter(c => c.type === cosmeticTypeMap[activeTab as ShopCategory]);
 
@@ -35,8 +45,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               return <PieceComp className="w-16 h-16 text-cyan-300" />;
           }
           case 'avatar': {
-              const AvatarComp = (cosmetic.item as Avatar).component;
-              return <AvatarComp className="w-16 h-16" />;
+              return <img src={(cosmetic.item as Avatar).url} alt={cosmetic.name} className="w-16 h-16 rounded-full object-cover bg-slate-700" />;
           }
           case 'emoji':
               return <span className="text-4xl">{(cosmetic.item as Emoji).emoji}</span>
@@ -88,7 +97,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </button>
                 ) : (
                     <button
-                        onClick={() => setConfirmingPurchase(cosmetic)}
+                        onClick={() => handleConfirmClick(cosmetic)}
                         disabled={!canAfford}
                         className={`w-full mt-auto py-2 px-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm ${canAfford ? 'bg-cyan-500 hover:bg-cyan-400 text-black' : 'bg-slate-600 text-slate-400 cursor-not-allowed'}`}
                     >
@@ -147,7 +156,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <p className="text-slate-300 mb-6">Are you sure you want to buy <strong className='text-white'>{confirmingPurchase.name}</strong> for <strong className='text-yellow-400'>{confirmingPurchase.price} 💰</strong>?</p>
                 <div className='flex justify-center gap-4'>
                     <button
-                        onClick={() => setConfirmingPurchase(null)}
+                        onClick={() => { playSound('click'); setConfirmingPurchase(null); }}
                         className="bg-slate-600 hover:bg-slate-500 font-bold py-2 px-6 rounded-lg transition-colors"
                     >
                         Cancel

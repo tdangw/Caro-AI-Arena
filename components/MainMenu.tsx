@@ -3,15 +3,17 @@ import type { BotProfile, Cosmetic, PieceStyle, PieceEffect, Avatar, GameTheme, 
 import { useGameState } from '../context/GameStateContext';
 import { BOTS, ALL_COSMETICS, getXpForNextLevel } from '../constants';
 import Modal from './Modal';
+import { useSound } from '../hooks/useSound';
 
 const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({onGoToShop, itemOffset = 0}) => {
     const { gameState } = useGameState();
+    const { playSound } = useSound();
     
     // Widen the pool of featured items to all unowned cosmetics
     const unownedItems = useMemo(() => {
-        const potentialItems = ALL_COSMETICS.filter(c => !gameState.ownedCosmeticIds.includes(c.id));
+        const potentialItems = ALL_COSMETICS.filter(c => !gameState.ownedCosmeticIds.includes(c.id) && c.price > 0);
         // If all items are owned, show a default cool item instead of nothing
-        return potentialItems.length > 0 ? potentialItems : [ALL_COSMETICS.find(c => c.id === 'piece_fire')!];
+        return potentialItems.length > 0 ? potentialItems : [ALL_COSMETICS.find(c => c.id === 'boom_laser')!];
     }, [gameState.ownedCosmeticIds]);
 
     const [currentItemIndex, setCurrentItemIndex] = useState(() => (itemOffset % unownedItems.length));
@@ -50,8 +52,7 @@ const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({
               return <div className={`w-14 h-14 rounded-md flex items-center justify-center p-2 ${theme.boardBg}`}><div className={`w-10 h-10 rounded ${theme.cellBg} border-2 ${theme.gridColor}`} /></div>;
           }
           case 'avatar': {
-              const AvatarComp = (cosmetic.item as Avatar).component;
-              return <AvatarComp className="w-14 h-14" />;
+              return <img src={(cosmetic.item as Avatar).url} alt={cosmetic.name} className="w-14 h-14 rounded-full object-cover bg-slate-700" />;
           }
           case 'emoji': {
               return <span className="text-4xl">{(cosmetic.item as Emoji).emoji}</span>
@@ -65,7 +66,7 @@ const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({
             <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Featured Item</h3>
             <div className="w-20 h-20 flex items-center justify-center">{renderPreview(featuredItem)}</div>
             <p className="text-white font-semibold mt-1 text-sm h-10 flex items-center">{featuredItem.name}</p>
-            <button onClick={onGoToShop} className="mt-2 text-xs bg-yellow-500 text-black font-bold px-3 py-1 rounded-full hover:bg-yellow-400 transition-colors">
+            <button onClick={() => { playSound('click'); onGoToShop(); }} className="mt-2 text-xs bg-yellow-500 text-black font-bold px-3 py-1 rounded-full hover:bg-yellow-400 transition-colors">
                 Go to Shop
             </button>
         </div>
@@ -74,7 +75,7 @@ const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({
 
 const PlayerProfile: React.FC = () => {
     const { gameState, setPlayerName } = useGameState();
-    const { playerName, playerLevel, playerXp, wins, losses, activeAvatar, coins } = gameState;
+    const { playerName, playerLevel, playerXp, wins, losses, draws, activeAvatar, coins } = gameState;
     const [isEditingName, setIsEditingName] = useState(false);
     const [nameInput, setNameInput] = useState(playerName);
 
@@ -87,7 +88,7 @@ const PlayerProfile: React.FC = () => {
         setIsEditingName(false);
     };
     
-    const AvatarComponent = activeAvatar.component;
+    const avatarUrl = activeAvatar.url;
     const xpForNextLevel = getXpForNextLevel(playerLevel);
     const xpPercentage = (playerXp / xpForNextLevel) * 100;
 
@@ -97,7 +98,7 @@ const PlayerProfile: React.FC = () => {
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
             <div className="relative z-10">
                 <div className="flex items-center gap-4">
-                    <AvatarComponent className="w-16 h-16 rounded-full flex-shrink-0 border-2 border-slate-600 group-hover:border-cyan-400 transition-colors" />
+                    <img src={avatarUrl} alt="Player Avatar" className="w-16 h-16 rounded-full flex-shrink-0 border-2 border-slate-600 group-hover:border-cyan-400 transition-colors object-cover bg-slate-700" />
                     <div className="flex-grow text-left">
                         {isEditingName ? (
                             <input 
@@ -146,7 +147,7 @@ const PlayerProfile: React.FC = () => {
                         <p className="text-slate-400 text-xs uppercase tracking-wider">Losses</p>
                     </div>
                     <div className="transition-transform duration-200 hover:scale-110 p-2 rounded-lg">
-                        <p className="text-cyan-400 font-bold text-xl">{wins + losses}</p>
+                        <p className="text-cyan-400 font-bold text-xl">{wins + losses + draws}</p>
                         <p className="text-slate-400 text-xs uppercase tracking-wider">Total</p>
                     </div>
                 </div>
@@ -155,13 +156,13 @@ const PlayerProfile: React.FC = () => {
     );
 }
 
-const BotCard: React.FC<{ bot: BotProfile; onChallenge: (bot: BotProfile) => void; }> = ({ bot, onChallenge }) => (
+const BotCard: React.FC<{ bot: BotProfile; onChallenge: () => void; }> = ({ bot, onChallenge }) => (
     <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center transition-all duration-300 flex flex-col backdrop-blur-sm hover:border-cyan-400">
-        <img src={bot.avatar} alt={bot.name} className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-slate-600"/>
+        <img src={bot.avatar} alt={bot.name} className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-slate-600 object-cover bg-slate-700"/>
         <h3 className="text-lg font-bold text-white mb-1">{bot.name}</h3>
         <p className="text-slate-400 text-xs mb-3 flex-grow">{bot.description}</p>
         <button
-            onClick={() => onChallenge(bot)}
+            onClick={onChallenge}
             className="mt-auto w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-3 rounded-lg transition-all text-sm"
         >
             Challenge
@@ -179,6 +180,26 @@ interface MainMenuProps {
 const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInventory }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const { gameState, toggleSound, toggleMusic } = useGameState();
+  const { playSound } = useSound();
+
+  const handleChallengeClick = (bot: BotProfile) => {
+    playSound('click');
+    onStartGame(bot);
+  }
+
+  const handleSettingsClick = () => {
+    playSound('click');
+    setIsSettingsModalOpen(true);
+  }
+
+  const handleToggleSound = () => {
+      playSound('click');
+      toggleSound();
+  }
+  const handleToggleMusic = () => {
+      playSound('click');
+      toggleMusic();
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden relative">
@@ -207,7 +228,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
                         Inventory 🎒
                     </button>
                     <button
-                        onClick={() => setIsSettingsModalOpen(true)}
+                        onClick={handleSettingsClick}
                         className="w-full h-full bg-slate-700 hover:bg-slate-600 text-white font-bold p-3 rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center"
                     >
                         Settings ⚙️
@@ -224,7 +245,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
             <div className="w-full max-w-4xl">
                 <h2 className="text-2xl font-bold text-center mb-4">Choose Your Opponent</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {BOTS.map(bot => <BotCard key={bot.id} bot={bot} onChallenge={onStartGame} />)}
+                    {BOTS.map(bot => <BotCard key={bot.id} bot={bot} onChallenge={() => handleChallengeClick(bot)} />)}
                 </div>
             </div>
        </div>
@@ -232,7 +253,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
         <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Settings">
              <div className="text-white -mx-6 -mb-6 divide-y divide-slate-700">
                 <button
-                    onClick={toggleSound}
+                    onClick={handleToggleSound}
                     className="w-full flex justify-between items-center px-6 py-4 hover:bg-slate-700/50 transition-colors"
                 >
                     <span className="font-semibold text-slate-300">Sound:</span>
@@ -241,7 +262,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
                     </span>
                 </button>
                 <button
-                    onClick={toggleMusic}
+                    onClick={handleToggleMusic}
                     className="w-full flex justify-between items-center px-6 py-4 hover:bg-slate-700/50 transition-colors"
                 >
                     <span className="font-semibold text-slate-300">Music:</span>
