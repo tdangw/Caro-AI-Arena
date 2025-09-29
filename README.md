@@ -15,8 +15,8 @@ Tất cả các tài sản công cộng (hình ảnh, âm thanh) nên được �
 |   |   |-- ...
 |   |-- /sounds
 |   |   |-- music.mp3
+|   |   |-- music_1.mp3
 |   |   |-- music_2.mp3
-|   |   |-- music_3.mp3
 |   |   |-- move.mp3
 |   |   |-- win.mp3
 |   |   |-- lose.mp3
@@ -87,7 +87,7 @@ Bạn có thể thêm nhiều bản nhạc nền và lựa chọn chúng trong m
 
 **Bước 1: Chuẩn bị Tệp Nhạc**
 
-*   Chuẩn bị các tệp nhạc của bạn, ví dụ: `music.mp3`, `music_2.mp3`, `music_3.mp3`.
+*   Chuẩn bị các tệp nhạc của bạn, ví dụ: `music.mp3`, `music_1.mp3`, `music_2.mp3`.
 *   Sao chép chúng vào thư mục `/public/assets/sounds/`.
 
 **Bước 2: Đăng ký Nhạc trong Game**
@@ -106,8 +106,8 @@ Bạn có thể thêm nhiều bản nhạc nền và lựa chọn chúng trong m
 
 export const MUSIC_TRACKS: MusicTrack[] = [
     { id: 'music_default', name: 'Celestial', url: '/assets/sounds/music.mp3' },
-    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_2.mp3' },
-    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_3.mp3' },
+    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_1.mp3' },
+    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_2.mp3' },
 ];
 ```
 

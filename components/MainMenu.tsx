@@ -279,12 +279,18 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
                 </div>
                 <div className="p-6">
                     <h3 className="font-semibold text-slate-300 mb-3">Select Music</h3>
-                    <div className="space-y-2">
-                        {MUSIC_TRACKS.map(track => (
-                            <button key={track.id} onClick={() => handleMusicSelect(track.url)} className={`w-full text-left px-3 py-2 rounded-md transition-colors ${gameState.activeMusicUrl === track.url ? 'bg-cyan-500 text-black font-semibold' : 'bg-slate-800 hover:bg-slate-700'}`}>
-                                {track.name}
-                            </button>
-                        ))}
+                    <div>
+                        <select
+                            value={gameState.activeMusicUrl}
+                            onChange={(e) => handleMusicSelect(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        >
+                            {MUSIC_TRACKS.map(track => (
+                                <option key={track.id} value={track.url}>
+                                    {track.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>

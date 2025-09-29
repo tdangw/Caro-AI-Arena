@@ -437,6 +437,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     const [showVictoryEffects, setShowVictoryEffects] = useState(false);
     const [winnerPlayer, setWinnerPlayer] = useState<Player | null>(null);
     const [boomCoords, setBoomCoords] = useState<{ winner?: DOMRect; loser?: DOMRect } | null>(null);
+    const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
 
     const [playerEmoji, setPlayerEmoji] = useState<string | null>(null);
     const [aiEmoji, setAiEmoji] = useState<string | null>(null);
@@ -482,6 +483,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     const handleGameReset = useCallback(() => {
         playSound('click');
         setShowGameOverModal(false);
+        setGameOverMessage(null);
         startGame();
     }, [startGame, playSound]);
     
@@ -503,27 +505,40 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         if (isGameOver && winner) {
             const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
             const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
+            
             onGameEnd(result);
 
-            if (result === 'win') playSound('win');
-            else if (result === 'loss') playSound('lose');
-
-
-            if (winner !== 'draw' && winner !== 'timeout') {
-                setWinnerPlayer(winner);
-                setShowVictoryEffects(true);
+            if (result === 'win') {
+                playSound('win');
+                setGameOverMessage('You Win!');
+            } else if (result === 'loss') {
+                playSound('lose');
+                setGameOverMessage('You Lose!');
+            } else {
+                setGameOverMessage('Draw!');
             }
 
             if (winner === aiMark) {
                 updateOpeningBook(moveHistory);
             }
 
-            const timer = setTimeout(() => {
+            const victoryEffectsTimer = setTimeout(() => {
+                setGameOverMessage(null); // Hide message when effects start
+                if (winner !== 'draw' && winner !== 'timeout') {
+                    setWinnerPlayer(winner);
+                    setShowVictoryEffects(true);
+                }
+            }, 2000); // Show message for 2 seconds
+
+            const modalTimer = setTimeout(() => {
                 setShowVictoryEffects(false);
                 setShowGameOverModal(true);
-            }, 5000);
+            }, 7000); // 2s for message + 5s for effects
 
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(victoryEffectsTimer);
+                clearTimeout(modalTimer);
+            };
         }
     }, [isGameOver, winner, onGameEnd, playerMark, currentPlayer, aiMark, moveHistory, playSound]);
 
@@ -603,6 +618,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             </header>
             
             <main className="flex-grow flex flex-col justify-center relative">
+                 {gameOverMessage && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 rounded-lg pointer-events-none">
+                        <h2 className={`text-6xl font-black animate-scale-in-out ${
+                            gameOverMessage.includes('Win') ? 'text-green-400' : gameOverMessage.includes('Lose') ? 'text-red-500' : 'text-yellow-400'
+                        }`} style={{ textShadow: '0 0 15px currentColor' }}>
+                            {gameOverMessage}
+                        </h2>
+                    </div>
+                )}
                  {playerEmoji && <div className="absolute left-16 top-0 text-5xl animate-emote-fall z-30">{playerEmoji}</div>}
                  {aiEmoji && <div className="absolute right-16 top-0 text-5xl animate-emote-fall z-30">{aiEmoji}</div>}
                  <div className="flex justify-between items-end px-2 mb-[4px] -mt-px">
@@ -668,12 +692,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                 </div>
                 <div>
                     <h3 className="font-semibold text-slate-300 mb-2 px-1">Select Music</h3>
-                    <div className="space-y-2">
-                        {MUSIC_TRACKS.map(track => (
-                            <button key={track.id} onClick={() => handleMusicSelect(track.url)} className={`w-full text-left px-3 py-2 rounded-md transition-colors ${gameState.activeMusicUrl === track.url ? 'bg-cyan-500 text-black font-semibold' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                                {track.name}
-                            </button>
-                        ))}
+                    <div>
+                        <select
+                            value={gameState.activeMusicUrl}
+                            onChange={(e) => handleMusicSelect(e.target.value)}
+                            className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        >
+                            {MUSIC_TRACKS.map(track => (
+                                <option key={track.id} value={track.url}>
+                                    {track.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -738,6 +768,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             }
             .last-move-highlight {
                 animation: last-move-glow 1.5s ease-in-out infinite;
+            }
+            @keyframes scale-in-out {
+                0% { transform: scale(0.5); opacity: 0; }
+                50% { transform: scale(1.1); opacity: 1; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            .animate-scale-in-out {
+                animation: scale-in-out 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             }
         `}</style>
     </div>

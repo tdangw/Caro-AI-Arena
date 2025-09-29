@@ -367,7 +367,7 @@ const MagicMissilePreview: React.FC = () => (<svg viewBox="0 0 100 100" classNam
 // Victory Components
 const DefaultVictoryEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(30).fill(0).map((_, i) => (<div key={i} className="absolute w-2 h-2 bg-yellow-300 rounded-full animate-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />))}</div>);
 const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
-const FireworksEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(12)].map((_, i) => (<div key={i} className="absolute animate-firework-container" style={{left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%`, animationDelay: `${i * 0.25}s`,}}>{[...Array(30)].map((_, p_i) => (<div key={p_i} className="absolute w-[3px] h-[3px] rounded-full animate-firework-particle" style={{'--firework-color': ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA'][p_i % 5], transform: `rotate(${p_i * (360/30)}deg)`} as React.CSSProperties}></div>))}</div>))}</div>);
+const FireworksEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(12)].map((_, i) => (<div key={i} className="absolute animate-firework-container" style={{left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%`, animationDelay: `${i * 0.25}s`,}}>{[...Array(30)].map((_, p_i) => (<div key={p_i} className="absolute w-[5px] h-[5px] rounded-full animate-firework-particle" style={{'--firework-color': ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA'][p_i % 5], transform: `rotate(${p_i * (360/30)}deg)`} as React.CSSProperties}></div>))}</div>))}</div>);
 const StarlightEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(25).fill(0).map((_, i) => (<div key={i} className="animate-starlight" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, transform: `scale(${0.5 + Math.random() * 0.5})` }}>✨</div>))}</div>);
 
 // Boom Components
@@ -402,9 +402,16 @@ const getVictoryAndBoomStyles = () => `
   /* Victory: Starlight */
   @keyframes starlight-twinkle { 0%, 100% { transform: scale(0.5); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px currentColor); } }
   .animate-starlight { position: absolute; color: #fef08a; font-size: 1.5rem; animation: starlight-twinkle 2s ease-in-out infinite; }
-  /* Victory: Fireworks (NEW) */
-  @keyframes firework-particle-burst { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(80px) scale(0); opacity: 0; } }
-  .animate-firework-particle { animation: firework-particle-burst 1s ease-out forwards; background-color: var(--firework-color); }
+  /* Victory: Fireworks (IMPROVED VISIBILITY) */
+  @keyframes firework-particle-burst { 
+    0% { transform: translateX(0) scale(1.2); opacity: 1; } 
+    100% { transform: translateX(120px) scale(0); opacity: 0; } 
+  }
+  .animate-firework-particle { 
+    animation: firework-particle-burst 1.2s ease-out forwards; 
+    background-color: var(--firework-color);
+    filter: drop-shadow(0 0 6px var(--firework-color)) brightness(1.2);
+  }
   .animate-firework-container { opacity: 0; animation: firework-fade-in 0.1s linear forwards; animation-delay: inherit; }
   @keyframes firework-fade-in { to { opacity: 1; } }
 
@@ -464,8 +471,8 @@ export const BOTS: BotProfile[] = [
 // --- Music Tracks ---
 export const MUSIC_TRACKS: MusicTrack[] = [
     { id: 'music_default', name: 'Celestial', url: '/assets/sounds/music.mp3' },
-    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_2.mp3' },
-    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_3.mp3' },
+    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_1.mp3' },
+    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_2.mp3' },
 ];
 
 // --- All Cosmetics for the Shop ---
