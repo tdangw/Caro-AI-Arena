@@ -6,24 +6,28 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Caro AI Arena</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
         font-family: 'Inter', sans-serif;
       }
     </style>
+    <!-- Tailwind CDN is removed, assuming you'll set it up with PostCSS later for a production build -->
+    <!-- For now, we will add it back so the styling doesn't break during dev -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
 <link rel="stylesheet" href="/index.css">
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.1.7",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4"
   }
 }
 </script>
-  <script type="module" crossorigin src="/Caro-AI-Arena/assets/index-D5JIEM8b.js"></script>
+  <script type="module" crossorigin src="/Caro-AI-Arena/assets/index-CPGw_ra6.js"></script>
 </head>
   <body class="bg-slate-900">
     <div id="root"></div>
