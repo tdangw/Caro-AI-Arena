@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect } from '../types';
-import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT } from '../constants';
+import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect, VictoryEffect, BoomEffect, Emoji } from '../types';
+import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS } from '../constants';
+
+const DEFAULT_EMOJI_IDS = ALL_COSMETICS.filter(c => c.type === 'emoji' && c.price === 0).map(c => c.id);
 
 interface GameState {
   coins: number;
@@ -10,11 +12,14 @@ interface GameState {
   playerLevel: number;
   playerXp: number;
   ownedCosmeticIds: string[];
+  emojiInventory: Record<string, number>; // For consumable emojis
   activeTheme: GameTheme;
   activePieceX: PieceStyle;
   activePieceO: PieceStyle;
   activeAvatar: Avatar;
   activeEffect: PieceEffect;
+  activeVictoryEffect: VictoryEffect;
+  activeBoomEffect: BoomEffect;
   isSoundOn: boolean;
   isMusicOn: boolean;
 }
@@ -27,17 +32,20 @@ interface GameStateContextType {
   addCoins: (amount: number) => void;
   addXp: (amount: number) => void;
   purchaseCosmetic: (cosmetic: Cosmetic) => boolean;
+  consumeEmoji: (emojiId: string) => void;
   equipTheme: (theme: GameTheme) => void;
   equipPiece: (piece: PieceStyle) => void;
   equipAvatar: (avatar: Avatar) => void;
   equipEffect: (effect: PieceEffect) => void;
+  equipVictoryEffect: (effect: VictoryEffect) => void;
+  equipBoomEffect: (effect: BoomEffect) => void;
   toggleSound: () => void;
   toggleMusic: () => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'caroGameState_v4';
+const LOCAL_STORAGE_KEY = 'caroGameState_v6'; // Version bump for new emoji inventory
 
 // Helper to avoid storing React components in JSON
 const sanitizeCosmetic = (cosmetic: any) => {
@@ -62,26 +70,32 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
           activePieceO: { ...DEFAULT_PIECES_O, ...parsed.activePieceO },
           activeAvatar: { ...DEFAULT_AVATAR, ...parsed.activeAvatar },
           activeEffect: { ...DEFAULT_EFFECT, ...parsed.activeEffect },
+          activeVictoryEffect: { ...DEFAULT_VICTORY_EFFECT, ...parsed.activeVictoryEffect },
+          activeBoomEffect: { ...DEFAULT_BOOM_EFFECT, ...parsed.activeBoomEffect },
           isSoundOn: parsed.isSoundOn ?? true,
           isMusicOn: parsed.isMusicOn ?? true,
+          emojiInventory: parsed.emojiInventory ?? {},
         };
       }
     } catch (error) {
       console.error("Failed to parse game state from localStorage", error);
     }
     return {
-      coins: 10000,
+      coins: 1000,
       playerName: `Player_${Math.floor(1000 + Math.random() * 9000)}`,
       wins: 0,
       losses: 0,
       playerLevel: 1,
       playerXp: 0,
-      ownedCosmeticIds: [DEFAULT_THEME.id, DEFAULT_PIECES_X.id, DEFAULT_PIECES_O.id, DEFAULT_AVATAR.id, DEFAULT_EFFECT.id, 'emoji_wave', 'emoji_gg'],
+      ownedCosmeticIds: [DEFAULT_THEME.id, DEFAULT_PIECES_X.id, DEFAULT_PIECES_O.id, DEFAULT_AVATAR.id, DEFAULT_EFFECT.id, DEFAULT_VICTORY_EFFECT.id, DEFAULT_BOOM_EFFECT.id, ...DEFAULT_EMOJI_IDS],
+      emojiInventory: {},
       activeTheme: DEFAULT_THEME,
       activePieceX: DEFAULT_PIECES_X,
       activePieceO: DEFAULT_PIECES_O,
       activeAvatar: DEFAULT_AVATAR,
       activeEffect: DEFAULT_EFFECT,
+      activeVictoryEffect: DEFAULT_VICTORY_EFFECT,
+      activeBoomEffect: DEFAULT_BOOM_EFFECT,
       isSoundOn: true,
       isMusicOn: true,
     };
@@ -96,6 +110,8 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
             activePieceO: sanitizeCosmetic(gameState.activePieceO),
             activeAvatar: sanitizeCosmetic(gameState.activeAvatar),
             activeEffect: sanitizeCosmetic(gameState.activeEffect),
+            activeVictoryEffect: sanitizeCosmetic(gameState.activeVictoryEffect),
+            activeBoomEffect: sanitizeCosmetic(gameState.activeBoomEffect),
         };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (error) {
@@ -134,6 +150,22 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
         return { ...prev, playerLevel: newLevel, playerXp: newXp };
     });
   }, []);
+  
+  const consumeEmoji = useCallback((emojiId: string) => {
+    // Default emojis are not consumable
+    if (DEFAULT_EMOJI_IDS.includes(emojiId)) return;
+
+    setGameState(prev => {
+        const newInventory = { ...prev.emojiInventory };
+        if (newInventory[emojiId] > 0) {
+            newInventory[emojiId] -= 1;
+            if (newInventory[emojiId] === 0) {
+                delete newInventory[emojiId];
+            }
+        }
+        return { ...prev, emojiInventory: newInventory };
+    });
+  }, []);
 
     const equipEffect = useCallback((effect: PieceEffect) => {
         if (gameState.ownedCosmeticIds.includes(effect.id)) {
@@ -141,39 +173,73 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
     }, [gameState.ownedCosmeticIds]);
 
+    const equipVictoryEffect = useCallback((effect: VictoryEffect) => {
+        if (gameState.ownedCosmeticIds.includes(effect.id)) {
+            setGameState(prev => ({ ...prev, activeVictoryEffect: effect }));
+        }
+    }, [gameState.ownedCosmeticIds]);
+
+    const equipBoomEffect = useCallback((effect: BoomEffect) => {
+        if (gameState.ownedCosmeticIds.includes(effect.id)) {
+            setGameState(prev => ({ ...prev, activeBoomEffect: effect }));
+        }
+    }, [gameState.ownedCosmeticIds]);
+
+    const equipTheme = useCallback((theme: GameTheme) => {
+      if (gameState.ownedCosmeticIds.includes(theme.id)) {
+        setGameState(prev => ({ ...prev, activeTheme: theme }));
+      }
+    }, [gameState.ownedCosmeticIds]);
+  
+    const equipPiece = useCallback((piece: PieceStyle) => {
+      if (gameState.ownedCosmeticIds.includes(piece.id)) {
+        setGameState(prev => ({ ...prev, activePieceX: piece, activePieceO: piece }));
+      }
+    }, [gameState.ownedCosmeticIds]);
+    
+    const equipAvatar = useCallback((avatar: Avatar) => {
+      if (gameState.ownedCosmeticIds.includes(avatar.id)) {
+          setGameState(prev => ({ ...prev, activeAvatar: avatar}));
+      }
+    }, [gameState.ownedCosmeticIds]);
+
   const purchaseCosmetic = useCallback((cosmetic: Cosmetic): boolean => {
-    if (gameState.coins >= cosmetic.price && !gameState.ownedCosmeticIds.includes(cosmetic.id)) {
+    if (gameState.coins < cosmetic.price) return false;
+
+    // Handle consumable emojis separately
+    if (cosmetic.type === 'emoji' && cosmetic.price > 0) {
+        setGameState(prev => {
+            const newInventory = { ...prev.emojiInventory };
+            newInventory[cosmetic.id] = (newInventory[cosmetic.id] || 0) + 1;
+            return {
+                ...prev,
+                coins: prev.coins - cosmetic.price,
+                emojiInventory: newInventory,
+            };
+        });
+        return true;
+    }
+    
+    // Handle permanent items
+    if (!gameState.ownedCosmeticIds.includes(cosmetic.id)) {
       setGameState(prev => ({
         ...prev,
         coins: prev.coins - cosmetic.price,
         ownedCosmeticIds: [...prev.ownedCosmeticIds, cosmetic.id],
       }));
-       // Auto-equip after purchase
-        if (cosmetic.type === 'effect') {
-            equipEffect(cosmetic.item as PieceEffect);
-        }
+       // Auto-equip permanent items after purchase
+        if (cosmetic.type === 'effect') equipEffect(cosmetic.item as PieceEffect);
+        if (cosmetic.type === 'victory') equipVictoryEffect(cosmetic.item as VictoryEffect);
+        if (cosmetic.type === 'boom') equipBoomEffect(cosmetic.item as BoomEffect);
+        if (cosmetic.type === 'theme') equipTheme(cosmetic.item as GameTheme);
+        if (cosmetic.type === 'avatar') equipAvatar(cosmetic.item as Avatar);
+        if (cosmetic.type === 'piece') equipPiece(cosmetic.item as PieceStyle);
+
       return true;
     }
+
     return false;
-  }, [gameState.coins, gameState.ownedCosmeticIds, equipEffect]);
-
-  const equipTheme = useCallback((theme: GameTheme) => {
-    if (gameState.ownedCosmeticIds.includes(theme.id)) {
-      setGameState(prev => ({ ...prev, activeTheme: theme }));
-    }
-  }, [gameState.ownedCosmeticIds]);
-
-  const equipPiece = useCallback((piece: PieceStyle) => {
-    if (gameState.ownedCosmeticIds.includes(piece.id)) {
-      setGameState(prev => ({ ...prev, activePieceX: piece, activePieceO: piece }));
-    }
-  }, [gameState.ownedCosmeticIds]);
-  
-  const equipAvatar = useCallback((avatar: Avatar) => {
-    if (gameState.ownedCosmeticIds.includes(avatar.id)) {
-        setGameState(prev => ({ ...prev, activeAvatar: avatar}));
-    }
-  }, [gameState.ownedCosmeticIds]);
+  }, [gameState.coins, gameState.ownedCosmeticIds, gameState.emojiInventory, equipEffect, equipVictoryEffect, equipBoomEffect, equipTheme, equipAvatar, equipPiece]);
 
   const toggleSound = useCallback(() => {
     setGameState(prev => ({ ...prev, isSoundOn: !prev.isSoundOn }));
@@ -184,7 +250,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
 
   return (
-    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, addCoins, addXp, purchaseCosmetic, equipTheme, equipPiece, equipAvatar, equipEffect, toggleSound, toggleMusic }}>
+    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic }}>
       {children}
     </GameStateContext.Provider>
   );

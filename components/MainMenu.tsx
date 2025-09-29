@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import type { BotProfile, Cosmetic, PieceStyle, PieceEffect, Avatar, GameTheme, CosmeticType, Emoji } from '../types';
 import { useGameState } from '../context/GameStateContext';
@@ -157,7 +156,7 @@ const PlayerProfile: React.FC = () => {
 }
 
 const BotCard: React.FC<{ bot: BotProfile; onChallenge: (bot: BotProfile) => void; }> = ({ bot, onChallenge }) => (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center transform hover:-translate-y-1 transition-transform duration-300 flex flex-col backdrop-blur-sm">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center transition-all duration-300 flex flex-col backdrop-blur-sm hover:border-cyan-400">
         <img src={bot.avatar} alt={bot.name} className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-slate-600"/>
         <h3 className="text-lg font-bold text-white mb-1">{bot.name}</h3>
         <p className="text-slate-400 text-xs mb-3 flex-grow">{bot.description}</p>

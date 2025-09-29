@@ -1,11 +1,11 @@
-
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useGameLogic } from '../hooks/useGameLogic';
-import { getAIMove } from '../services/aiService';
+import { getAIMove } from '../services/geminiService';
 import { updateOpeningBook } from '../services/openingBook';
-import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emoji, PieceEffect } from '../types';
+import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import Modal from './Modal';
-import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, DEFAULT_EFFECT } from '../constants';
+// FIX: Import ALL_COSMETICS to correctly check for emoji prices.
+import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, DEFAULT_EFFECT, ALL_COSMETICS } from '../constants';
 import Shop from './Shop';
 import Inventory from './Inventory';
 import { useGameState } from '../context/GameStateContext';
@@ -31,6 +31,7 @@ const useAnimatedCounter = (endValue: number, start: boolean, duration = 1200) =
              setCount(0);
         }
         return () => {
+            // FIX: Ensure cancelAnimationFrame is called with the frame ID.
              if(frameRef.current) cancelAnimationFrame(frameRef.current);
         };
     }, [endValue, duration, start]);
@@ -144,14 +145,14 @@ interface PlayerInfoProps {
     isCurrent: boolean;
     piece: PieceStyle;
 }
-const PlayerInfo: React.FC<PlayerInfoProps> = ({ name, avatar, level, player, align, isCurrent, piece }) => {
+const PlayerInfo = React.forwardRef<HTMLDivElement, PlayerInfoProps>(({ name, avatar, level, player, align, isCurrent, piece }, ref) => {
     const AvatarComponent = typeof avatar === 'function' ? avatar : null;
     const PieceComponent = piece.component;
     const glowClass = isCurrent ? 'shadow-lg shadow-yellow-500/50' : '';
     const colorClass = player === 'X' ? 'text-cyan-400' : 'text-pink-500';
 
     return (
-        <div className={`flex items-center gap-3 relative ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+        <div ref={ref} className={`flex items-center gap-3 relative ${align === 'right' ? 'flex-row-reverse' : ''}`}>
              {AvatarComponent 
                 ? <AvatarComponent className={`w-14 h-14 transition-all duration-300 ${glowClass}`} /> 
                 : <img src={avatar as string} alt={name} className={`w-14 h-14 rounded-full transition-all duration-300 ${glowClass}`} />
@@ -165,7 +166,7 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({ name, avatar, level, player, al
             </div>
         </div>
     )
-}
+});
 
 // --- GameOver Modal Content ---
 const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeout' | null, timedOutPlayer: Player | null, playerMark: Player, onReset: () => void, onExit: () => void, playerLevel: number, playerXp: number }> = ({show, winner, timedOutPlayer, playerMark, onReset, onExit, playerLevel, playerXp}) => {
@@ -300,10 +301,10 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
                 </div>
 
                 <div className="mt-8 space-y-3">
-                    <button onClick={onReset} className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg transition-colors text-lg">
+                    <button onClick={() => onReset()} className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg transition-colors text-lg">
                         Play again!
                     </button>
-                    <button onClick={onExit} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                    <button onClick={() => onExit()} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                         Leave room ({leaveCountdown})
                     </button>
                 </div>
@@ -418,50 +419,114 @@ interface GameScreenProps {
   pieces: { X: PieceStyle, O: PieceStyle };
   playerInfo: { name: string, level: number, avatar: Avatar, xp: number, wins: number, losses: number };
   activeEffect: PieceEffect;
+  activeVictoryEffect: VictoryEffect;
+  activeBoomEffect: BoomEffect;
   isPaused: boolean;
   onOpenShop: () => void;
   onOpenInventory: () => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, pieces, playerInfo, activeEffect, isPaused, onOpenShop, onOpenInventory }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, pieces, playerInfo, activeEffect, activeVictoryEffect, activeBoomEffect, isPaused, onOpenShop, onOpenInventory }) => {
     const playerMark: Player = 'X';
     const aiMark: Player = 'O';
 
     const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory } = useGameLogic(playerMark, isPaused);
-    const { gameState, toggleSound, toggleMusic } = useGameState();
+    const { gameState, toggleSound, toggleMusic, consumeEmoji } = useGameState();
 
     const [aiThinkingCell, setAiThinkingCell] = useState<{row: number, col: number} | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isEmojiPanelOpen, setEmojiPanelOpen] = useState(false);
     const [lastMove, setLastMove] = useState<{row: number, col: number} | null>(null);
     const [aiPiece, setAiPiece] = useState<PieceStyle>(PIECE_STYLES[0]);
+    const [showGameOverModal, setShowGameOverModal] = useState(false);
+    const [showVictoryEffects, setShowVictoryEffects] = useState(false);
+    const [winnerPlayer, setWinnerPlayer] = useState<Player | null>(null);
+    const [boomCoords, setBoomCoords] = useState<{ winner?: DOMRect; loser?: DOMRect } | null>(null);
 
     const [playerEmoji, setPlayerEmoji] = useState<string | null>(null);
     const [aiEmoji, setAiEmoji] = useState<string | null>(null);
     
     const isAiThinkingRef = useRef(false);
-    const ownedEmojis = useMemo(() => EMOJIS.filter(e => gameState.ownedCosmeticIds.includes(e.id)), [gameState.ownedCosmeticIds]);
+    const playerAvatarRef = useRef<HTMLDivElement>(null);
+    const botAvatarRef = useRef<HTMLDivElement>(null);
+
+    const ownedEmojis = useMemo(() => {
+        const defaultEmojiIds = new Set(EMOJIS.filter(e => e.price === 0).map(e => e.id));
+        const consumableEmojiIds = Object.keys(gameState.emojiInventory).filter(id => (gameState.emojiInventory[id] || 0) > 0);
+        const allUsableIds = new Set([...defaultEmojiIds, ...consumableEmojiIds]);
+        return EMOJIS.filter(e => allUsableIds.has(e.id));
+    }, [gameState.emojiInventory]);
 
     useEffect(() => {
         const randomPiece = PIECE_STYLES[Math.floor(Math.random() * PIECE_STYLES.length)];
         setAiPiece(randomPiece);
     }, []);
 
-    const showEmoji = (emoji: string, isPlayer: boolean) => {
+    const showEmoji = (emoji: Emoji, isPlayer: boolean) => {
+        const emojiChar = emoji.emoji;
         if (isPlayer) {
-            setPlayerEmoji(emoji);
+            setPlayerEmoji(emojiChar);
+            setEmojiPanelOpen(false);
+            // FIX: Check ALL_COSMETICS for price, as the Emoji type itself doesn't have it.
+            if (ALL_COSMETICS.find(c => c.id === emoji.id)?.price ?? 0 > 0) {
+                consumeEmoji(emoji.id);
+            }
             setTimeout(() => setPlayerEmoji(null), 3200); // Match animation duration
         } else {
-            setAiEmoji(emoji);
+            setAiEmoji(emojiChar);
             setTimeout(() => setAiEmoji(null), 3200); // Match animation duration
         }
     };
     
+    const handleGameReset = useCallback(() => {
+        setShowGameOverModal(false);
+        startGame();
+    }, [startGame]);
+    
+    // Effect to calculate avatar positions for boom effects, only when needed.
+    useEffect(() => {
+        if (showVictoryEffects && winnerPlayer) {
+            const winnerRect = (winnerPlayer === playerMark ? playerAvatarRef.current : botAvatarRef.current)?.getBoundingClientRect();
+            const loserRect = (winnerPlayer === playerMark ? botAvatarRef.current : playerAvatarRef.current)?.getBoundingClientRect();
+
+            if (winnerRect && loserRect && winnerRect.width > 0 && loserRect.width > 0) {
+                setBoomCoords({ winner: winnerRect, loser: loserRect });
+            }
+        } else {
+            setBoomCoords(null);
+        }
+    }, [showVictoryEffects, winnerPlayer, playerMark]);
+
+    useEffect(() => {
+        if (isGameOver && winner) {
+            const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
+            const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
+            onGameEnd(result);
+
+            if (winner !== 'draw' && winner !== 'timeout') {
+                setWinnerPlayer(winner);
+                setShowVictoryEffects(true);
+            }
+
+            if (winner === aiMark) {
+                updateOpeningBook(moveHistory);
+            }
+
+            const timer = setTimeout(() => {
+                setShowVictoryEffects(false);
+                setShowGameOverModal(true);
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isGameOver, winner, onGameEnd, playerMark, currentPlayer, aiMark, moveHistory]);
+
     useEffect(() => {
         if (!isDecidingFirst && bot && currentPlayer === aiMark && !isGameOver && !isAiThinkingRef.current) {
             isAiThinkingRef.current = true;
             if (Math.random() < 0.15) {
-                setTimeout(() => showEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)].emoji, false), 500);
+                // FIX: Pass the second argument 'isPlayer' (false for AI) to the showEmoji function.
+                setTimeout(() => showEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)], false), 500);
             }
 
             const onThinking = (move: { row: number, col: number }) => {
@@ -469,8 +534,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             };
 
             getAIMove(board, aiMark, bot.skillLevel, onThinking).then(({ row, col }) => {
-                if (row !== -1 && !isGameOver) { // Ensure game hasn't ended while AI was "thinking"
-                    setAiThinkingCell(null); // Clear indicator before making the move
+                if (row !== -1 && !isGameOver) {
+                    setAiThinkingCell(null);
                     makeMove(row, col);
                     setLastMove({row, col});
                 }
@@ -483,18 +548,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         }
     }, [currentPlayer, isGameOver, makeMove, bot, aiMark, isDecidingFirst, board]);
 
-    useEffect(() => {
-        if (isGameOver && winner) {
-            const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
-            const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
-            onGameEnd(result);
-
-            // If AI won, update the opening book with this game's moves.
-            if (winner === aiMark) {
-                updateOpeningBook(moveHistory);
-            }
-        }
-    }, [isGameOver, winner, onGameEnd, playerMark, currentPlayer, aiMark, moveHistory]);
 
     const handleCellClick = (row: number, col: number) => {
         if (currentPlayer === playerMark && !isDecidingFirst) {
@@ -505,11 +558,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     
     const allPieces = { X: pieces.X, O: aiPiece };
     const DecoratorComponent = theme.decoratorComponent;
+    const VictoryComponent = activeVictoryEffect.component;
+    const BoomComponent = activeBoomEffect.component;
+    
+    const isLaserAndAiWins = activeBoomEffect.id === 'boom_laser' && winnerPlayer === aiMark;
+    const finalBoomWinnerCoords = isLaserAndAiWins ? boomCoords?.loser : boomCoords?.winner;
+    const finalBoomLoserCoords = isLaserAndAiWins ? boomCoords?.winner : boomCoords?.loser;
 
     return (
     <div className={`${theme.boardBg} min-h-screen p-2 sm:p-4 flex flex-col items-center justify-center font-sans transition-colors duration-500 relative overflow-hidden`}>
         {DecoratorComponent && <DecoratorComponent />}
         <EffectStyles />
+        <VictoryAndBoomStyles />
 
         <div className="w-full max-w-xl mx-auto relative z-10 flex flex-col h-full justify-center">
             <header className="flex justify-center items-center w-full">
@@ -524,8 +584,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                             <button onClick={() => setEmojiPanelOpen(p => !p)} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
                         </div>
                         {isEmojiPanelOpen && (
-                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 p-2 rounded-full flex gap-2 animate-fade-in-down w-max z-20">
-                               {ownedEmojis.map(e => <button key={e.id} onClick={() => { showEmoji(e.emoji, true); setEmojiPanelOpen(false);}} className="text-3xl hover:scale-125 transition-transform">{e.emoji}</button>)}
+                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 p-2 rounded-lg grid grid-rows-2 grid-flow-col gap-2 animate-fade-in-down z-20">
+                               {ownedEmojis.map(e => <button key={e.id} onClick={() => showEmoji(e, true)} className="text-3xl hover:scale-125 transition-transform">{e.emoji}</button>)}
                             </div>
                         )}
                     </div>
@@ -536,7 +596,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                  {playerEmoji && <div className="absolute left-16 top-0 text-5xl animate-emote-fall z-30">{playerEmoji}</div>}
                  {aiEmoji && <div className="absolute right-16 top-0 text-5xl animate-emote-fall z-30">{aiEmoji}</div>}
                  <div className="flex justify-between items-end px-2 mb-[4px] -mt-px">
-                    <PlayerInfo name={playerInfo.name} avatar={playerInfo.avatar.component} level={playerInfo.level} align="left" player="X" isCurrent={currentPlayer === playerMark} piece={pieces.X} />
+                    <PlayerInfo ref={playerAvatarRef} name={playerInfo.name} avatar={playerInfo.avatar.component} level={playerInfo.level} align="left" player="X" isCurrent={currentPlayer === playerMark} piece={pieces.X} />
                      <div className="text-center pb-1">
                         <div className="text-white font-mono text-sm tracking-wider">
                             <span className="text-green-400">{playerInfo.wins}W</span>
@@ -545,7 +605,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                         </div>
                         <div className="text-white font-mono text-lg tracking-wider">{formatTime(totalGameTime)}</div>
                     </div>
-                    <PlayerInfo name={bot.name} avatar={bot.avatar} level={bot.level} align="right" player="O" isCurrent={currentPlayer === aiMark} piece={aiPiece} />
+                    <PlayerInfo ref={botAvatarRef} name={bot.name} avatar={bot.avatar} level={bot.level} align="right" player="O" isCurrent={currentPlayer === aiMark} piece={aiPiece} />
                 </div>
                 <div className="w-[90%] mx-auto">
                     <SmoothTimerBar 
@@ -557,23 +617,22 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                     <div className="mt-px relative">
                         <GameBoard board={board} onCellClick={handleCellClick} winningLine={winningLine} pieces={allPieces} aiThinkingCell={aiThinkingCell} theme={theme} lastMove={lastMove} effect={activeEffect} />
                         {isDecidingFirst && <FirstMoveAnimation pieces={allPieces} onAnimationEnd={beginGame} playerMark={playerMark} />}
-                        {isGameOver && winner && winner !== 'draw' && winner !== 'timeout' && (
-                            <div className="absolute inset-0 pointer-events-none z-10">
-                                {Array(30).fill(0).map((_, i) => (
-                                    <div key={i} className="absolute w-2 h-2 bg-yellow-300 rounded-full animate-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </div>
             </main>
         </div>
         
-        {/* FIX: The `startGame` function was being passed directly to `onReset` in some cases,
-            which is problematic because button `onClick` handlers pass an event object that
-            `startGame` does not expect. Wrapping the call in an arrow function `() => startGame()` 
-            ensures it's always called without arguments, resolving the error. */}
-        <GameOverScreen show={isGameOver} winner={winner} timedOutPlayer={winner === 'timeout' ? currentPlayer : null} playerMark={playerMark} onReset={() => startGame()} onExit={onExit} playerLevel={playerInfo.level} playerXp={playerInfo.xp} />
+        {showVictoryEffects && winnerPlayer && boomCoords && (
+            <>
+                <VictoryComponent />
+                <BoomComponent 
+                    winnerCoords={finalBoomWinnerCoords}
+                    loserCoords={finalBoomLoserCoords}
+                />
+            </>
+        )}
+
+        <GameOverScreen show={showGameOverModal} winner={winner} timedOutPlayer={winner === 'timeout' ? currentPlayer : null} playerMark={playerMark} onReset={handleGameReset} onExit={onExit} playerLevel={playerInfo.level} playerXp={playerInfo.xp} />
 
         <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Settings">
              <div className="space-y-4 text-white">

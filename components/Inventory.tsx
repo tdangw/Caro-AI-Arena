@@ -1,21 +1,22 @@
-
 import React, { useState } from 'react';
-import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect } from '../types';
-import { ALL_COSMETICS, DEFAULT_PIECES_X, DEFAULT_AVATAR, DEFAULT_THEME, DEFAULT_EFFECT, PIECE_STYLES, AVATARS, EMOJIS, THEMES, PIECE_EFFECTS } from '../constants';
+import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect, VictoryEffect, BoomEffect } from '../types';
+import { ALL_COSMETICS, DEFAULT_PIECES_X, DEFAULT_AVATAR, DEFAULT_THEME, DEFAULT_EFFECT, PIECE_STYLES, AVATARS, EMOJIS, THEMES, PIECE_EFFECTS, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, VICTORY_EFFECTS, BOOM_EFFECTS } from '../constants';
 import { useGameState } from '../context/GameStateContext';
 
-type InventoryCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects';
+type InventoryCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects' | 'Victory' | 'Booms';
 
 const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { gameState, equipPiece, equipAvatar, equipTheme, equipEffect } = useGameState();
+  const { gameState, equipPiece, equipAvatar, equipTheme, equipEffect, equipVictoryEffect, equipBoomEffect } = useGameState();
   const [activeTab, setActiveTab] = useState<InventoryCategory>('Skins');
 
-  const cosmeticTypeMap: Record<InventoryCategory, 'piece' | 'avatar' | 'emoji' | 'theme' | 'effect'> = {
+  const cosmeticTypeMap: Record<InventoryCategory, 'piece' | 'avatar' | 'emoji' | 'theme' | 'effect' | 'victory' | 'boom'> = {
     Skins: 'piece',
     Avatars: 'avatar',
     Emojis: 'emoji',
     Themes: 'theme',
     Effects: 'effect',
+    Victory: 'victory',
+    Booms: 'boom',
   };
 
   const allPossibleCosmetics: Cosmetic[] = [
@@ -24,20 +25,35 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     ...EMOJIS.map(e => ({ id: e.id, name: e.name, type: 'emoji' as const, price: 0, item: e })),
     ...THEMES.map(t => ({ id: t.id, name: t.name, type: 'theme' as const, price: 0, item: t })),
     ...PIECE_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'effect' as const, price: 0, item: e })),
+    ...VICTORY_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'victory' as const, price: 0, item: e })),
+    ...BOOM_EFFECTS.map(e => ({ id: e.id, name: e.name, type: 'boom' as const, price: 0, item: e })),
      { id: DEFAULT_PIECES_X.id, name: DEFAULT_PIECES_X.name, type: 'piece', price: 0, item: DEFAULT_PIECES_X },
      { id: DEFAULT_AVATAR.id, name: DEFAULT_AVATAR.name, type: 'avatar', price: 0, item: DEFAULT_AVATAR },
      { id: DEFAULT_THEME.id, name: DEFAULT_THEME.name, type: 'theme', price: 0, item: DEFAULT_THEME },
      { id: DEFAULT_EFFECT.id, name: DEFAULT_EFFECT.name, type: 'effect', price: 0, item: DEFAULT_EFFECT },
+     { id: DEFAULT_VICTORY_EFFECT.id, name: DEFAULT_VICTORY_EFFECT.name, type: 'victory', price: 0, item: DEFAULT_VICTORY_EFFECT },
+     { id: DEFAULT_BOOM_EFFECT.id, name: DEFAULT_BOOM_EFFECT.name, type: 'boom', price: 0, item: DEFAULT_BOOM_EFFECT },
   ];
     
   const allItemsMap = new Map<string, Cosmetic>();
-  allPossibleCosmetics.forEach(item => allItemsMap.set(item.id, item));
+  allPossibleCosmetics.forEach(item => {
+    if (!allItemsMap.has(item.id)) {
+        allItemsMap.set(item.id, item)
+    }
+  });
 
-  const ownedItems = gameState.ownedCosmeticIds
-      .map(id => allItemsMap.get(id))
-      .filter((c): c is Cosmetic => c !== undefined);
+  const ownedPermanentItems = gameState.ownedCosmeticIds
+    .map(id => allItemsMap.get(id))
+    .filter((c): c is Cosmetic => c !== undefined);
+  
+  const ownedConsumableItems = Object.keys(gameState.emojiInventory)
+    .map(id => allItemsMap.get(id))
+    .filter((c): c is Cosmetic => c !== undefined && (gameState.emojiInventory[c.id] || 0) > 0);
+  
+  const ownedItems = [...ownedPermanentItems, ...ownedConsumableItems];
+  const uniqueOwnedItems = Array.from(new Map(ownedItems.map(item => [item.id, item])).values());
 
-  const filteredCosmetics = ownedItems.filter(c => c.type === cosmeticTypeMap[activeTab as InventoryCategory]);
+  const filteredCosmetics = uniqueOwnedItems.filter(c => c.type === cosmeticTypeMap[activeTab as InventoryCategory]);
 
 
    const renderItemPreview = (cosmetic: Cosmetic) => {
@@ -60,6 +76,14 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               const PreviewComp = (cosmetic.item as PieceEffect).previewComponent;
               return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
           }
+          case 'victory': {
+              const PreviewComp = (cosmetic.item as VictoryEffect).previewComponent;
+              return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
+          }
+          case 'boom': {
+              const PreviewComp = (cosmetic.item as BoomEffect).previewComponent;
+              return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
+          }
           default:
               return null;
       }
@@ -78,7 +102,14 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         ? gameState.activeTheme.id === cosmetic.id
                         : cosmetic.type === 'effect'
                         ? gameState.activeEffect.id === cosmetic.id
+                        : cosmetic.type === 'victory'
+                        ? gameState.activeVictoryEffect.id === cosmetic.id
+                        : cosmetic.type === 'boom'
+                        ? gameState.activeBoomEffect.id === cosmetic.id
                         : false;
+
+                    const isConsumableEmoji = cosmetic.type === 'emoji' && (ALL_COSMETICS.find(c => c.id === cosmetic.id)?.price || 0) > 0;
+                    const ownedEmojiCount = gameState.emojiInventory[cosmetic.id] || 0;
                                     
                     const handleEquip = () => {
                         if (cosmetic.type === 'piece') {
@@ -89,11 +120,20 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             equipTheme(cosmetic.item as GameTheme);
                         } else if (cosmetic.type === 'effect') {
                             equipEffect(cosmetic.item as PieceEffect);
+                        } else if (cosmetic.type === 'victory') {
+                            equipVictoryEffect(cosmetic.item as VictoryEffect);
+                        } else if (cosmetic.type === 'boom') {
+                            equipBoomEffect(cosmetic.item as BoomEffect);
                         }
                     }
 
                     return (
-                    <div key={cosmetic.id} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 flex flex-col items-center text-center transition-all duration-300 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1">
+                    <div key={cosmetic.id} className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 flex flex-col items-center text-center transition-all duration-300 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10">
+                         {isConsumableEmoji && ownedEmojiCount > 0 && (
+                            <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-slate-800">
+                                {ownedEmojiCount}
+                            </div>
+                        )}
                         <div className="h-24 w-24 mb-3 flex items-center justify-center bg-slate-900/70 rounded-lg p-2">
                             {renderItemPreview(cosmetic)}
                         </div>
@@ -141,8 +181,8 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </header>
 
         <div className="flex-shrink-0 mb-8 border-b border-slate-700">
-            <nav className="flex space-x-1 sm:space-x-2 md:space-x-4 overflow-x-auto pb-px">
-                {(['Skins', 'Avatars', 'Emojis', 'Themes', 'Effects'] as InventoryCategory[]).map(tab => (
+            <nav className="flex space-x-1 sm:space-x-2 md:space-x-4 overflow-x-auto pb-px scrollbar-hide">
+                {(['Skins', 'Avatars', 'Emojis', 'Themes', 'Effects', 'Victory', 'Booms'] as InventoryCategory[]).map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -154,7 +194,7 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </nav>
         </div>
         
-        <main className="flex-grow overflow-y-auto pr-2 -mr-2">
+        <main className="flex-grow overflow-y-auto pr-2 -mr-2 scrollbar-hide">
             {renderContent()}
         </main>
       </div>

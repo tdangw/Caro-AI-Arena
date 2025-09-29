@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import MainMenu from './components/MainMenu';
 import GameScreen from './components/GameScreen';
@@ -89,6 +88,8 @@ const AppContent: React.FC = () => {
                             pieces={{ X: gameState.activePieceX, O: gameState.activePieceO }}
                             playerInfo={{name: gameState.playerName, level: gameState.playerLevel, avatar: gameState.activeAvatar, xp: gameState.playerXp, wins: gameState.wins, losses: gameState.losses}}
                             activeEffect={gameState.activeEffect}
+                            activeVictoryEffect={gameState.activeVictoryEffect}
+                            activeBoomEffect={gameState.activeBoomEffect}
                             isPaused={!!overlay}
                             onOpenShop={handleOpenShopOverlay}
                             onOpenInventory={handleOpenInventoryOverlay}

@@ -1,38 +1,28 @@
-
 import React, { useState } from 'react';
-import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect } from '../types';
+import type { Cosmetic, PieceStyle, Avatar, Emoji, GameTheme, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import { ALL_COSMETICS } from '../constants';
 import { useGameState } from '../context/GameStateContext';
 import Modal from './Modal';
 
-type ShopCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects';
+type ShopCategory = 'Skins' | 'Avatars' | 'Emojis' | 'Themes' | 'Effects' | 'Victory' | 'Booms';
 
 const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { gameState, purchaseCosmetic, equipPiece, equipAvatar, equipTheme, equipEffect } = useGameState();
+  const { gameState, purchaseCosmetic } = useGameState();
   const [activeTab, setActiveTab] = useState<ShopCategory>('Skins');
   const [confirmingPurchase, setConfirmingPurchase] = useState<Cosmetic | null>(null);
 
-  const cosmeticTypeMap: Record<ShopCategory, 'piece' | 'avatar' | 'emoji' | 'theme' | 'effect'> = {
+  const cosmeticTypeMap: Record<ShopCategory, 'piece' | 'avatar' | 'emoji' | 'theme' | 'effect' | 'victory' | 'boom'> = {
     Skins: 'piece',
     Avatars: 'avatar',
     Emojis: 'emoji',
     Themes: 'theme',
     Effects: 'effect',
+    Victory: 'victory',
+    Booms: 'boom',
   };
   
   const handlePurchase = (cosmetic: Cosmetic) => {
-    if (purchaseCosmetic(cosmetic)) {
-        // Equip right after purchase
-        if (cosmetic.type === 'piece') {
-            equipPiece(cosmetic.item as PieceStyle);
-        } else if (cosmetic.type === 'avatar') {
-            equipAvatar(cosmetic.item as Avatar);
-        } else if (cosmetic.type === 'theme') {
-            equipTheme(cosmetic.item as GameTheme);
-        } else if (cosmetic.type === 'effect') {
-            equipEffect(cosmetic.item as PieceEffect);
-        }
-    }
+    purchaseCosmetic(cosmetic);
     setConfirmingPurchase(null);
   };
   
@@ -58,6 +48,14 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               const PreviewComp = (cosmetic.item as PieceEffect).previewComponent;
               return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
           }
+          case 'victory': {
+              const PreviewComp = (cosmetic.item as VictoryEffect).previewComponent;
+              return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
+          }
+          case 'boom': {
+              const PreviewComp = (cosmetic.item as BoomEffect).previewComponent;
+              return <div className="w-16 h-16 flex items-center justify-center text-cyan-300"><PreviewComp /></div>;
+          }
           default:
               return null;
       }
@@ -69,15 +67,22 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           {filteredCosmetics.map(cosmetic => {
             const isOwned = gameState.ownedCosmeticIds.includes(cosmetic.id);
             const canAfford = gameState.coins >= cosmetic.price;
+            const isConsumableEmoji = cosmetic.type === 'emoji' && cosmetic.price > 0;
+            const ownedEmojiCount = gameState.emojiInventory[cosmetic.id] || 0;
 
             return (
-              <div key={cosmetic.id} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 flex flex-col items-center text-center transition-all duration-300 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1">
+              <div key={cosmetic.id} className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 flex flex-col items-center text-center transition-all duration-300 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10">
+                {isConsumableEmoji && ownedEmojiCount > 0 && (
+                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-slate-800">
+                        {ownedEmojiCount}
+                    </div>
+                )}
                 <div className="h-24 w-24 mb-3 flex items-center justify-center bg-slate-900/70 rounded-lg p-2">
                     {renderItemPreview(cosmetic)}
                 </div>
                  <h3 className="text-md font-semibold text-white mb-2 h-10 flex items-center justify-center">{cosmetic.name}</h3>
 
-                {isOwned ? (
+                {isOwned && !isConsumableEmoji ? (
                     <button disabled className="w-full mt-auto py-2 px-3 rounded-lg text-sm font-semibold bg-green-600 text-white cursor-not-allowed">
                         Owned
                     </button>
@@ -118,8 +123,8 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </header>
 
         <div className="flex-shrink-0 mb-8 border-b border-slate-700">
-            <nav className="flex space-x-1 sm:space-x-2 md:space-x-4 overflow-x-auto pb-px">
-                {(['Skins', 'Avatars', 'Emojis', 'Themes', 'Effects'] as ShopCategory[]).map(tab => (
+            <nav className="flex space-x-1 sm:space-x-2 md:space-x-4 overflow-x-auto pb-px scrollbar-hide">
+                {(['Skins', 'Avatars', 'Emojis', 'Themes', 'Effects', 'Victory', 'Booms'] as ShopCategory[]).map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -131,7 +136,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </nav>
         </div>
         
-        <main className="flex-grow overflow-y-auto pr-2 -mr-2">
+        <main className="flex-grow overflow-y-auto pr-2 -mr-2 scrollbar-hide">
             {renderContent()}
         </main>
       </div>
