@@ -211,12 +211,12 @@ export const PIECE_STYLES: PieceStyle[] = [
 ];
 
 // --- Avatars ---
-export const DEFAULT_AVATAR: Avatar = { id: 'avatar_default', name: 'Guest', url: '/assets/avatars/avatar_1.png' };
+export const DEFAULT_AVATAR: Avatar = { id: 'avatar_default', name: 'Guest', url: 'assets/avatars/avatar_1.png' };
 export const AVATARS: Avatar[] = [
-    { id: 'avatar_2', name: 'Rebel', url: '/assets/avatars/avatar_2.png' },
-    { id: 'avatar_3', name: 'Scholar', url: '/assets/avatars/avatar_3.png' },
-    { id: 'avatar_4', name: 'Ninja', url: '/assets/avatars/avatar_4.png' },
-    { id: 'avatar_5', name: 'Knight', url: '/assets/avatars/avatar_5.png' },
+    { id: 'avatar_2', name: 'Rebel', url: 'assets/avatars/avatar_2.png' },
+    { id: 'avatar_3', name: 'Scholar', url: 'assets/avatars/avatar_3.png' },
+    { id: 'avatar_4', name: 'Ninja', url: 'assets/avatars/avatar_4.png' },
+    { id: 'avatar_5', name: 'Knight', url: 'assets/avatars/avatar_5.png' },
 ];
 
 // --- Emojis ---
@@ -463,16 +463,16 @@ export const BOOM_EFFECTS: BoomEffect[] = [
 
 // --- AI Bot Profiles ---
 export const BOTS: BotProfile[] = [
-    { id: 'bot_easy', name: 'Rookie', avatar: '/assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'A friendly bot that is still learning the ropes. Great for beginners.' },
-    { id: 'bot_medium', name: 'Adept', avatar: '/assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'A seasoned player with a good grasp of strategy. Provides a solid challenge.' },
-    { id: 'bot_hard', name: 'Master', avatar: '/assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'A grandmaster of Caro. Thinks several moves ahead. Defeat is likely.' },
+    { id: 'bot_easy', name: 'Rookie', avatar: 'assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'A friendly bot that is still learning the ropes. Great for beginners.' },
+    { id: 'bot_medium', name: 'Adept', avatar: 'assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'A seasoned player with a good grasp of strategy. Provides a solid challenge.' },
+    { id: 'bot_hard', name: 'Master', avatar: 'assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'A grandmaster of Caro. Thinks several moves ahead. Defeat is likely.' },
 ];
 
 // --- Music Tracks ---
 export const MUSIC_TRACKS: MusicTrack[] = [
-    { id: 'music_default', name: 'Celestial', url: '/assets/sounds/music.mp3' },
-    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_1.mp3' },
-    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_2.mp3' },
+    { id: 'music_default', name: 'Celestial', url: 'assets/sounds/music.mp3' },
+    { id: 'music_chill', name: 'Chillhop', url: 'assets/sounds/music_1.mp3' },
+    { id: 'music_action', name: 'Action', url: 'assets/sounds/music_2.mp3' },
 ];
 
 // --- All Cosmetics for the Shop ---
