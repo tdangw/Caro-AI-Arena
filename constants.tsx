@@ -203,45 +203,41 @@ const SpringThemeDecorator: React.FC = React.memo(() => (
 const SummerThemeDecorator: React.FC = React.memo(() => (
     <>
         {/* Sun */}
-        <div className="absolute -top-1/4 -right-1/4 w-3/5 h-3/5 pointer-events-none">
-            <div className="absolute inset-0 bg-yellow-200 rounded-full blur-3xl animate-pulse-slow opacity-30"></div>
-            <div className="absolute inset-10 bg-yellow-100 rounded-full blur-2xl animate-pulse-slow opacity-30"></div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 pointer-events-none z-0">
+            <div className="absolute inset-0 bg-yellow-300 rounded-full blur-3xl animate-pulse-slow opacity-10"></div>
+            <div className="absolute inset-10 bg-yellow-200 rounded-full blur-2xl animate-pulse-slow opacity-20"></div>
         </div>
         
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {/* God Rays */}
-            {[...Array(4)].map((_, i) => (
-                <div key={i} className="absolute h-[150%] w-[150%] animate-god-ray" style={{
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="absolute h-[150%] w-[150%]" style={{
                     top: '-25%', right: '-25%',
-                    background: 'linear-gradient(225deg, rgba(253, 224, 71, 0.2), rgba(253, 224, 71, 0))',
-                    animationDelay: `${i * 2.5}s`, animationDuration: `${10}s`,
+                    background: 'linear-gradient(225deg, rgba(253, 224, 71, 0.08), rgba(253, 224, 71, 0))',
+                    transformOrigin: 'top right',
+                    animation: `god-ray-pulse 8s ease-in-out infinite ${i * 2.5}s`,
                 }}></div>
             ))}
-            {/* Heat Motes */}
-            {[...Array(12)].map((_, i) => (
-                <div key={i} className="absolute text-yellow-100/70" style={{
-                    top: '-10%', left: `${Math.random() * 100}%`,
-                    fontSize: `${0.4 + Math.random() * 0.6}rem`,
-                    animationName: 'mote-fall-anim, mote-sway-anim',
-                    animationDuration: `${8 + Math.random() * 8}s, ${4 + Math.random() * 4}s`,
-                    animationDelay: `${Math.random() * 12}s, ${Math.random() * 4}s`,
-                    animationTimingFunction: 'linear, ease-in-out',
-                    animationIterationCount: 'infinite, infinite',
-                    // @ts-ignore
-                    '--sway-amount': `${(Math.random() - 0.5) * 60}px`,
-                }}>•</div>
+             {/* Rain Shower */}
+            {[...Array(30)].map((_, i) => (
+                <div key={i} className="absolute w-0.5 h-12 bg-gradient-to-b from-cyan-200/0 to-cyan-200/30" style={{
+                    top: '-20%', left: `${Math.random() * 100}%`,
+                    animation: `rain-fall ${0.5 + Math.random() * 0.5}s linear infinite`,
+                    animationDelay: `${Math.random() * 5}s`
+                }}></div>
             ))}
         </div>
         <style>{`
-            @keyframes pulse-slow { 50% { opacity: 0.8; transform: scale(1.1); } }
+            @keyframes pulse-slow { 50% { opacity: 0.4; transform: scale(1.05); } }
             .animate-pulse-slow { animation: pulse-slow 10s ease-in-out infinite; }
-            @keyframes god-ray-shimmer {
-                0%, 100% { opacity: 0.2; transform: rotate(25deg) scale(1.05); }
-                50% { opacity: 0.3; transform: rotate(20deg) scale(1.1); }
+            @keyframes god-ray-pulse {
+                0%, 100% { opacity: 0; transform: rotate(15deg); }
+                50% { opacity: 0.6; transform: rotate(20deg); }
             }
-            .animate-god-ray { transform-origin: top right; animation: god-ray-shimmer ease-in-out infinite alternate; }
-            @keyframes mote-fall-anim { to { transform: translateY(105vh); opacity: 0; } }
-            @keyframes mote-sway-anim { 50% { margin-left: var(--sway-amount); } }
+            @keyframes rain-fall {
+                from { transform: translateY(0vh); }
+                to { transform: translateY(120vh); }
+            }
         `}</style>
     </>
 ));
@@ -449,25 +445,31 @@ const DefaultVictoryEffect: React.FC = () => (<div className="absolute inset-0 p
 const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 0.2}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
 const FireworksEffect: React.FC = () => {
     const colors = ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#FDE047'];
+    // Three distinct waves of fireworks
+    const bursts = [
+        { delay: 0.1, scale: 1.2, left: '30%', top: '40%' },
+        { delay: 0.6, scale: 1.0, left: '70%', top: '50%' },
+        { delay: 1.1, scale: 1.1, left: '50%', top: '30%' },
+    ];
     return (
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-            {[...Array(4)].map((_, i) => (
+            {bursts.map((burst, i) => (
                 <div key={i} className="absolute animate-firework-container" style={{
-                    left: `${15 + Math.random() * 70}%`,
-                    top: `${20 + Math.random() * 60}%`,
-                    transform: `scale(${0.8 + Math.random() * 0.4})`,
-                    animationDelay: `${i * 0.4}s`,
+                    left: burst.left,
+                    top: burst.top,
+                    transform: `scale(${burst.scale})`,
+                    animationDelay: `${burst.delay}s`,
                 }}>
-                    {[...Array(30)].map((_, p_i) => {
+                    {[...Array(35)].map((_, p_i) => {
                         const angle = Math.random() * 360;
-                        const distance = 50 + Math.random() * 50;
+                        const distance = 60 + Math.random() * 70; // Increased distance
                         return (
-                            <div key={p_i} className="absolute w-1.5 h-1.5 rounded-full animate-firework-particle" style={{
+                            <div key={p_i} className="absolute w-2 h-2 rounded-full animate-firework-particle" style={{
                                 backgroundColor: colors[p_i % colors.length],
                                 // @ts-ignore
                                 '--angle': `${angle}deg`,
                                 '--distance': `${distance}px`,
-                                '--duration': `${0.8 + Math.random() * 0.5}s`,
+                                '--duration': `${0.9 + Math.random() * 0.5}s`,
                             }} />
                         )
                     })}

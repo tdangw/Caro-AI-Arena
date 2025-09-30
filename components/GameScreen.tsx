@@ -471,14 +471,13 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             if (ALL_COSMETICS.find(c => c.id === emoji.id)?.price ?? 0 > 0) {
                 consumeEmoji(emoji.id);
             }
-            setTimeout(() => setPlayerEmoji(null), 3200); // Match animation duration
+            setTimeout(() => setPlayerEmoji(null), 3000); // Match animation duration
         } else {
             setAiEmoji(emojiChar);
-            setTimeout(() => setAiEmoji(null), 3200); // Match animation duration
+            setTimeout(() => setAiEmoji(null), 3000); // Match animation duration
         }
     };
     
-    // FIX: Updated the call to startGame to align with its new parameterless definition.
     const handleGameReset = useCallback(() => {
         playSound('click');
         setShowGameOverModal(false);
@@ -596,18 +595,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         <VictoryAndBoomStyles />
 
         <div className="w-full max-w-xl mx-auto relative z-10 flex flex-col h-full justify-center">
-            <header className="flex justify-center items-center w-full">
-                <div className="text-center relative">
+            <header className="flex justify-center items-center w-full relative">
+                <div className="text-center">
                     <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400" style={{ textShadow: '0 2px 10px rgba(100, 200, 255, 0.3)' }}>
                         Caro AI Arena
                     </h1>
-                    <div className="flex items-center justify-center gap-4 mt-1">
+                    <div className="relative flex items-center justify-center gap-4 mt-1">
                         <button onClick={() => { playSound('click'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
                         <button onClick={undoMove} disabled={!canUndo} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg></button>
                         <button onClick={() => { playSound('click'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
-                         {isEmojiPanelOpen && (
+                        {isEmojiPanelOpen && (
                             <div 
-                                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800/90 backdrop-blur-sm p-2 rounded-lg flex flex-wrap justify-center gap-2 animate-fade-in-down z-30" 
+                                className="absolute top-full mt-4 bg-slate-800/90 backdrop-blur-sm p-2 rounded-lg flex flex-wrap justify-center gap-2 animate-fade-in-down z-30" 
                                 style={{width: '280px'}}
                                 onMouseLeave={() => setEmojiPanelOpen(false)}
                             >
@@ -628,8 +627,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                         </h2>
                     </div>
                 )}
-                 {playerEmoji && <div className="absolute left-16 top-0 text-5xl animate-emote-fall z-30">{playerEmoji}</div>}
-                 {aiEmoji && <div className="absolute right-16 top-0 text-5xl animate-emote-fall z-30">{aiEmoji}</div>}
+                 {playerEmoji && <div className="absolute left-16 top-0 text-5xl animate-emote-gentle-fall z-30">{playerEmoji}</div>}
+                 {aiEmoji && <div className="absolute right-16 top-0 text-5xl animate-emote-gentle-fall z-30">{aiEmoji}</div>}
                  <div className="flex justify-between items-end px-2 mb-[4px] -mt-px">
                     <PlayerInfo ref={playerAvatarRef} name={playerInfo.name} avatar={playerInfo.avatar.url} level={playerInfo.level} align="left" player="X" isCurrent={currentPlayer === playerMark} piece={pieces.X} />
                      <div className="text-center pb-1">
@@ -734,35 +733,21 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                 to { opacity: 1; transform: translateY(0); }
             }
             .animate-fade-in-down { animation: fade-in-down 0.2s ease-out forwards; }
-            @keyframes emote-multi-bounce {
-                0% { transform: translateY(-10vh) scale(0.3); opacity: 0; }
+            @keyframes emote-gentle-fall {
+                0% { transform: translateY(-10vh) scale(0.5); opacity: 0; }
                 20% { opacity: 1; }
-                45% {
+                60% {
                     transform: translateY(35vh) scale(1);
-                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); /* Ease-in for acceleration */
-                }
-                50% {
-                    transform: translateY(38vh) scaleX(1.1) scaleY(0.9);
-                    animation-timing-function: ease-out; /* Quick squash */
-                }
-                65% {
-                    transform: translateY(25vh) scaleX(0.95) scaleY(1.05);
-                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); /* Ease-in for gravity on bounce */
-                }
-                70% {
-                    transform: translateY(38vh) scaleX(1.05) scaleY(0.95);
                     animation-timing-function: ease-out;
                 }
-                80% {
-                    transform: translateY(32vh) scaleX(0.98) scaleY(1.02);
-                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+                95% { opacity: 1; }
+                100% {
+                    transform: translateY(33vh) scale(0.8);
+                    opacity: 0;
                 }
-                85% { transform: translateY(38vh) scale(1); }
-                90% { transform: translateY(38vh) scale(1); opacity: 1; }
-                100% { transform: translateY(36vh) scale(0.8); opacity: 0; }
             }
-            .animate-emote-fall {
-                animation: emote-multi-bounce 3.2s forwards;
+            .animate-emote-gentle-fall {
+                animation: emote-gentle-fall 3s forwards;
             }
             @keyframes last-move-glow {
                 0%, 100% {
