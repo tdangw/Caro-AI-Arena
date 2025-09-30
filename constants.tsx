@@ -242,6 +242,90 @@ const SummerThemeDecorator: React.FC = React.memo(() => (
     </>
 ));
 
+const WinterThemeDecorator: React.FC = React.memo(() => (
+    <>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            {[...Array(40)].map((_, i) => (
+                <div key={i} className="absolute text-blue-200/60" style={{
+                    top: '-10%',
+                    left: `${-10 + Math.random() * 120}%`,
+                    fontSize: `${0.6 + Math.random() * 1.0}rem`,
+                    animationName: 'snowfall, sway',
+                    animationDuration: `${8 + Math.random() * 8}s, ${3 + Math.random() * 4}s`,
+                    animationDelay: `${Math.random() * 12}s, ${Math.random() * 4}s`,
+                    animationTimingFunction: 'linear, ease-in-out',
+                    animationIterationCount: 'infinite, infinite',
+                    // @ts-ignore
+                    '--sway-amount': `${(Math.random() - 0.5) * 120}px`,
+                }}>
+                    {Math.random() > 0.3 ? '❄' : '•'}
+                </div>
+            ))}
+        </div>
+        <style>{`
+            @keyframes snowfall {
+                from {
+                    transform: translateY(0vh) rotate(0deg);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateY(105vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+             @keyframes sway {
+                0%, 100% { margin-left: 0; }
+                50% { margin-left: var(--sway-amount); }
+            }
+        `}</style>
+    </>
+));
+
+const SpaceThemeDecorator: React.FC = React.memo(() => (
+    <>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            {/* Twinkling Stars */}
+            {[...Array(60)].map((_, i) => (
+                <div key={`star-${i}`} className="absolute w-0.5 h-0.5 bg-white rounded-full animate-twinkle" style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 10}s`,
+                    animationDuration: `${2 + Math.random() * 3}s`,
+                    opacity: Math.random() * 0.5 + 0.2,
+                }}/>
+            ))}
+             {/* Shooting Stars */}
+            {[...Array(3)].map((_, i) => (
+                 <div key={`shooting-star-${i}`} className="absolute h-0.5 w-24 bg-gradient-to-l from-white/50 to-transparent animate-shooting-star" style={{
+                    top: `${Math.random() * 60 - 10}%`,
+                    left: `${Math.random() * 60 + 50}%`,
+                    animationDelay: `${3 + Math.random() * 12}s`,
+                    animationDuration: `${1.5 + Math.random() * 1}s`,
+                 }} />
+            ))}
+        </div>
+        <style>{`
+            @keyframes twinkle {
+                0%, 100% { opacity: 0.2; transform: scale(0.8); }
+                50% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 3px white); }
+            }
+            .animate-twinkle { animation: twinkle ease-in-out infinite; }
+
+            @keyframes shooting-star {
+                from {
+                    transform: rotate(135deg) translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: rotate(135deg) translateX(150vmin);
+                    opacity: 0;
+                }
+            }
+            .animate-shooting-star { animation: shooting-star linear infinite; }
+        `}</style>
+    </>
+));
+
 
 // --- Game Themes ---
 export const DEFAULT_THEME: GameTheme = { id: 'theme_default', name: 'Default', boardBg: 'bg-slate-900', cellBg: 'bg-transparent', gridColor: 'border-slate-500', nameColor: 'text-white' };
@@ -253,6 +337,8 @@ export const THEMES: GameTheme[] = [
     { id: 'theme_autumn', name: 'Autumn', boardBg: 'bg-[#4a2525]', boardBgImage: 'assets/themes/autumn.png', cellBg: 'bg-transparent', gridColor: 'border-orange-400/50', nameColor: 'text-orange-100', decoratorComponent: AutumnThemeDecorator },
     { id: 'theme_spring', name: 'Spring', boardBg: 'bg-[#4d7c5a]', boardBgImage: 'assets/themes/spring.png', cellBg: 'bg-transparent', gridColor: 'border-pink-200/60', nameColor: 'text-pink-50', decoratorComponent: SpringThemeDecorator },
     { id: 'theme_summer', name: 'Summer', boardBg: 'bg-[#005f73]', boardBgImage: 'assets/themes/summer.png', cellBg: 'bg-transparent', gridColor: 'border-yellow-200/50', nameColor: 'text-yellow-50', decoratorComponent: SummerThemeDecorator },
+    { id: 'theme_winter', name: 'Winter', boardBg: 'bg-[#1a2b4a]', boardBgImage: 'assets/themes/winter.png', cellBg: 'bg-transparent', gridColor: 'border-blue-200/50', nameColor: 'text-blue-100', decoratorComponent: WinterThemeDecorator },
+    { id: 'theme_space', name: 'Space', boardBg: 'bg-[#0c0a1f]', boardBgImage: 'assets/themes/space.png', cellBg: 'bg-transparent', gridColor: 'border-purple-400/50', nameColor: 'text-purple-200', decoratorComponent: SpaceThemeDecorator },
 ];
 
 // --- Piece Styles ---

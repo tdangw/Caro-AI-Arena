@@ -220,7 +220,6 @@ export const useGameLogic = (
 
   // This function now correctly takes no arguments. It resets the game state
   // and sets isDecidingFirst to true, which triggers the first-move animation.
-  // FIX: Changed function signature to accept no arguments to match its usage.
   const startGame = useCallback(() => {
     stopTimers();
     setBoard(createEmptyBoard());
