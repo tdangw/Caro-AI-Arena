@@ -445,11 +445,13 @@ const DefaultVictoryEffect: React.FC = () => (<div className="absolute inset-0 p
 const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 0.2}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
 const FireworksEffect: React.FC = () => {
     const colors = ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#FDE047'];
-    // Three distinct waves of fireworks
+    // 5 distinct waves of fireworks, more centrally located
     const bursts = [
-        { delay: 0.1, scale: 1.2, left: '30%', top: '40%' },
-        { delay: 0.6, scale: 1.0, left: '70%', top: '50%' },
-        { delay: 1.1, scale: 1.1, left: '50%', top: '30%' },
+        { delay: 0.2, scale: 1.0, left: '45%', top: '40%' },
+        { delay: 0.7, scale: 0.8, left: '65%', top: '50%' },
+        { delay: 1.2, scale: 1.2, left: '35%', top: '30%' },
+        { delay: 1.6, scale: 0.9, left: '55%', top: '60%' },
+        { delay: 2.0, scale: 1.1, left: '40%', top: '55%' },
     ];
     return (
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -462,7 +464,7 @@ const FireworksEffect: React.FC = () => {
                 }}>
                     {[...Array(35)].map((_, p_i) => {
                         const angle = Math.random() * 360;
-                        const distance = 60 + Math.random() * 70; // Increased distance
+                        const distance = 60 + Math.random() * 70;
                         return (
                             <div key={p_i} className="absolute w-2 h-2 rounded-full animate-firework-particle" style={{
                                 backgroundColor: colors[p_i % colors.length],

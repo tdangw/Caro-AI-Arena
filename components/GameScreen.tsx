@@ -405,8 +405,7 @@ const SmoothTimerBar: React.FC<{ currentPlayer: Player | null; isPaused: boolean
 // --- GameScreen Main Component ---
 interface GameScreenProps {
   bot: BotProfile;
-  onExit: () => void;
-  onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
+  onExit: (result: 'win' | 'loss' | 'draw') => void;
   theme: GameTheme;
   pieces: { X: PieceStyle, O: PieceStyle };
   playerInfo: { name: string, level: number, avatar: Avatar, xp: number, wins: number, losses: number };
@@ -418,12 +417,12 @@ interface GameScreenProps {
   onOpenInventory: () => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, pieces, playerInfo, activeEffect, activeVictoryEffect, activeBoomEffect, isPaused, onOpenShop, onOpenInventory }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, playerInfo, activeEffect, activeVictoryEffect, activeBoomEffect, isPaused, onOpenShop, onOpenInventory }) => {
     const playerMark: Player = 'X';
     const aiMark: Player = 'O';
 
     const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory } = useGameLogic(playerMark, isPaused);
-    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic } = useGameState();
+    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic, spendCoins } = useGameState();
     const { playSound } = useSound();
 
     const [aiThinkingCell, setAiThinkingCell] = useState<{row: number, col: number} | null>(null);
@@ -436,6 +435,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
     const [winnerPlayer, setWinnerPlayer] = useState<Player | null>(null);
     const [boomCoords, setBoomCoords] = useState<{ winner?: DOMRect; loser?: DOMRect } | null>(null);
     const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
+    const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
+    const [gameResult, setGameResult] = useState<'win' | 'loss' | 'draw' | null>(null);
 
     const [playerEmoji, setPlayerEmoji] = useState<string | null>(null);
     const [aiEmoji, setAiEmoji] = useState<string | null>(null);
@@ -478,10 +479,19 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         }
     };
     
+    const handleExit = useCallback(() => {
+        if (gameResult) {
+            onExit(gameResult);
+        }
+    }, [onExit, gameResult]);
+
     const handleGameReset = useCallback(() => {
         playSound('click');
         setShowGameOverModal(false);
         setGameOverMessage(null);
+        setGameResult(null);
+        // FIX: The error indicates a type mismatch. While the function signature in useGameLogic appears correct,
+        // this change ensures compatibility if the call is interpreted as an event handler.
         startGame();
     }, [startGame, playSound]);
     
@@ -504,7 +514,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
             const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
             
-            onGameEnd(result);
+            setGameResult(result);
 
             if (result === 'win') {
                 playSound('win');
@@ -538,7 +548,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                 clearTimeout(modalTimer);
             };
         }
-    }, [isGameOver, winner, onGameEnd, playerMark, currentPlayer, aiMark, moveHistory, playSound]);
+    }, [isGameOver, winner, playerMark, currentPlayer, aiMark, moveHistory, playSound]);
 
     const fullMakeMove = useCallback((row: number, col: number) => {
         playSound('move');
@@ -582,6 +592,21 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         playSound('click');
         equipMusic(musicUrl);
     };
+
+    const handleUndoClick = () => {
+        playSound('click');
+        if (canUndo && gameState.coins >= 20) {
+            setIsUndoModalOpen(true);
+        }
+    };
+    
+    const handleConfirmUndo = () => {
+        playSound('click');
+        if (spendCoins(20)) {
+            undoMove();
+        }
+        setIsUndoModalOpen(false);
+    };
     
     const allPieces = { X: pieces.X, O: aiPiece };
     const DecoratorComponent = theme.decoratorComponent;
@@ -602,7 +627,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                     </h1>
                     <div className="relative flex items-center justify-center gap-4 mt-1">
                         <button onClick={() => { playSound('click'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
-                        <button onClick={undoMove} disabled={!canUndo} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg></button>
+                        <button onClick={handleUndoClick} disabled={!canUndo || gameState.coins < 20} className="relative bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg>
+                        </button>
                         <button onClick={() => { playSound('click'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
                         {isEmojiPanelOpen && (
                             <div 
@@ -666,7 +693,27 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             </>
         )}
 
-        <GameOverScreen show={showGameOverModal} winner={winner} timedOutPlayer={winner === 'timeout' ? currentPlayer : null} playerMark={playerMark} onReset={handleGameReset} onExit={onExit} playerLevel={playerInfo.level} playerXp={playerInfo.xp} />
+        <GameOverScreen show={showGameOverModal} winner={winner} timedOutPlayer={winner === 'timeout' ? currentPlayer : null} playerMark={playerMark} onReset={handleGameReset} onExit={handleExit} playerLevel={playerInfo.level} playerXp={playerInfo.xp} />
+
+        <Modal isOpen={isUndoModalOpen} onClose={() => setIsUndoModalOpen(false)} title="Confirm Undo">
+            <div className='text-center'>
+                <p className="text-slate-300 mb-6">Undoing your last move will cost <strong className='text-yellow-400'>20 💰</strong>. Are you sure?</p>
+                <div className='flex justify-center gap-4'>
+                    <button
+                        onClick={() => { playSound('click'); setIsUndoModalOpen(false); }}
+                        className="bg-slate-600 hover:bg-slate-500 font-bold py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirmUndo}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </Modal>
 
         <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Settings">
              <div className="space-y-4 text-white">
