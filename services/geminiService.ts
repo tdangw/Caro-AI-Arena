@@ -251,12 +251,12 @@ const findBestMoveWithMinimax = (board: BoardState, aiPlayer: Player, depth: num
 
 
 // Asynchronous, non-blocking recursive version for the 'hard' AI to prevent UI freezing
-const minimaxAsync = async (board: BoardState, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, aiPlayer: Player, scoreFunction: (b: BoardState, p: Player) => number, nodeCounter: { count: number }): Promise<{ score: number; move?: { row: number; col: number } }> => {
+const minimaxAsync = async (board: BoardState, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, aiPlayer: Player, scoreFunction: (b: BoardState, p: Player) => number, nodeCounter: { count: number }, movesToConsider?: { row: number; col: number }[]): Promise<{ score: number; move?: { row: number; col: number } }> => {
     if (depth === 0 || checkWin(board, 'X') || checkWin(board, 'O')) {
         return { score: scoreFunction(board, aiPlayer) };
     }
 
-    const possibleMoves = getValidMoves(board);
+    const possibleMoves = movesToConsider || getValidMoves(board);
     if (possibleMoves.length === 0) {
         return { score: scoreFunction(board, aiPlayer) };
     }
@@ -325,8 +325,21 @@ const findBestMoveWithMinimaxAsync = async (board: BoardState, aiPlayer: Player,
         }
     }
 
-    // If no immediate threats, run the fully async minimax.
-    const { move } = await minimaxAsync(board, depth, -Infinity, Infinity, true, aiPlayer, scoreFunction, { count: 0 });
+    // --- Optimization: Move Ordering ---
+    // Perform a shallow search (depth 0) to score and sort possible moves.
+    // This makes the alpha-beta pruning much more effective by searching promising branches first.
+    const scoredMoves = emptyCells.map(move => {
+        const tempBoard = board.map(r => [...r]);
+        tempBoard[move.row][move.col] = aiPlayer;
+        const score = scoreFunction(tempBoard, aiPlayer); // Shallow evaluation
+        return { move, score };
+    }).sort((a, b) => b.score - a.score); // Sort by best score for the AI
+
+    // Limit the deep search to only the top N most promising moves.
+    const movesToSearch = scoredMoves.slice(0, 8).map(m => m.move);
+
+    // If no immediate threats, run the fully async minimax on the pruned list of moves.
+    const { move } = await minimaxAsync(board, depth, -Infinity, Infinity, true, aiPlayer, scoreFunction, { count: 0 }, movesToSearch);
     
     if (move && board[move.row]?.[move.col] === null) {
         return move;

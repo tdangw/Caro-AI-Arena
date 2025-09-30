@@ -168,6 +168,83 @@ const AutumnThemeDecorator: React.FC = React.memo(() => (
         `}</style>
     </>
 ));
+const SpringThemeDecorator: React.FC = React.memo(() => (
+    <>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            {[...Array(15)].map((_, i) => (
+                <div key={i} className="absolute text-pink-200/60" style={{
+                    top: '-10%',
+                    left: `${-10 + Math.random() * 120}%`,
+                    fontSize: `${0.8 + Math.random() * 1.2}rem`,
+                    animationName: 'fall, sway',
+                    animationDuration: `${8 + Math.random() * 7}s, ${5 + Math.random() * 5}s`,
+                    animationDelay: `${Math.random() * 12}s, ${Math.random() * 5}s`,
+                    animationTimingFunction: 'linear, ease-in-out',
+                    animationIterationCount: 'infinite, infinite',
+                    // @ts-ignore
+                    '--sway-amount': `${(Math.random() - 0.5) * 120}px`,
+                }}>
+                    🌸
+                </div>
+            ))}
+        </div>
+        <style>{`
+            @keyframes fall {
+                to { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+            }
+            @keyframes sway {
+                0%, 100% { margin-left: 0; }
+                50% { margin-left: var(--sway-amount); }
+            }
+        `}</style>
+    </>
+));
+
+const SummerThemeDecorator: React.FC = React.memo(() => (
+    <>
+        {/* Sun */}
+        <div className="absolute -top-1/4 -right-1/4 w-3/5 h-3/5 pointer-events-none">
+            <div className="absolute inset-0 bg-yellow-200 rounded-full blur-3xl animate-pulse-slow opacity-30"></div>
+            <div className="absolute inset-10 bg-yellow-100 rounded-full blur-2xl animate-pulse-slow opacity-30"></div>
+        </div>
+        
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* God Rays */}
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="absolute h-[150%] w-[150%] animate-god-ray" style={{
+                    top: '-25%', right: '-25%',
+                    background: 'linear-gradient(225deg, rgba(253, 224, 71, 0.2), rgba(253, 224, 71, 0))',
+                    animationDelay: `${i * 2.5}s`, animationDuration: `${10}s`,
+                }}></div>
+            ))}
+            {/* Heat Motes */}
+            {[...Array(12)].map((_, i) => (
+                <div key={i} className="absolute text-yellow-100/70" style={{
+                    top: '-10%', left: `${Math.random() * 100}%`,
+                    fontSize: `${0.4 + Math.random() * 0.6}rem`,
+                    animationName: 'mote-fall-anim, mote-sway-anim',
+                    animationDuration: `${8 + Math.random() * 8}s, ${4 + Math.random() * 4}s`,
+                    animationDelay: `${Math.random() * 12}s, ${Math.random() * 4}s`,
+                    animationTimingFunction: 'linear, ease-in-out',
+                    animationIterationCount: 'infinite, infinite',
+                    // @ts-ignore
+                    '--sway-amount': `${(Math.random() - 0.5) * 60}px`,
+                }}>•</div>
+            ))}
+        </div>
+        <style>{`
+            @keyframes pulse-slow { 50% { opacity: 0.8; transform: scale(1.1); } }
+            .animate-pulse-slow { animation: pulse-slow 10s ease-in-out infinite; }
+            @keyframes god-ray-shimmer {
+                0%, 100% { opacity: 0.2; transform: rotate(25deg) scale(1.05); }
+                50% { opacity: 0.3; transform: rotate(20deg) scale(1.1); }
+            }
+            .animate-god-ray { transform-origin: top right; animation: god-ray-shimmer ease-in-out infinite alternate; }
+            @keyframes mote-fall-anim { to { transform: translateY(105vh); opacity: 0; } }
+            @keyframes mote-sway-anim { 50% { margin-left: var(--sway-amount); } }
+        `}</style>
+    </>
+));
 
 
 // --- Game Themes ---
@@ -178,6 +255,8 @@ export const THEMES: GameTheme[] = [
     { id: 'theme_retro', name: 'Retro', boardBg: 'bg-gradient-to-br from-[#281e36] to-[#4a2f58]', cellBg: 'bg-transparent', gridColor: 'border-yellow-400/30', nameColor: 'text-yellow-100', decoratorComponent: RetroThemeDecorator },
     { id: 'theme_ruby', name: 'Ruby', boardBg: 'bg-gradient-to-br from-[#3b0f2d] to-[#6d1b51]', cellBg: 'bg-transparent', gridColor: 'border-pink-400/30', nameColor: 'text-pink-100', decoratorComponent: RubyThemeDecorator },
     { id: 'theme_autumn', name: 'Autumn', boardBg: 'bg-gradient-to-br from-[#4a2525] to-[#7b3f3f]', cellBg: 'bg-transparent', gridColor: 'border-orange-400/30', nameColor: 'text-orange-100', decoratorComponent: AutumnThemeDecorator },
+    { id: 'theme_spring', name: 'Spring', boardBg: 'bg-gradient-to-br from-[#4d7c5a] to-[#88b894]', cellBg: 'bg-transparent', gridColor: 'border-pink-200/40', nameColor: 'text-pink-50', decoratorComponent: SpringThemeDecorator },
+    { id: 'theme_summer', name: 'Summer', boardBg: 'bg-gradient-to-br from-[#005f73] to-[#0a9396]', cellBg: 'bg-transparent', gridColor: 'border-yellow-200/30', nameColor: 'text-yellow-50', decoratorComponent: SummerThemeDecorator },
 ];
 
 // --- Piece Styles ---
@@ -363,11 +442,40 @@ const StarlightPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="
 const HeartBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-pink-500"><path d="M10 50 L 90 50 M80 40 L90 50 L80 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><text x="50" y="55" textAnchor="middle" fontSize="30">❤️</text></svg>);
 const RocketBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-orange-500"><path d="M10 50 L 90 50 M80 40 L90 50 L80 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><text x="50" y="55" textAnchor="middle" fontSize="30">🚀</text></svg>);
 const MagicMissilePreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-purple-500"><path d="M20 50 C 40 30, 60 70, 80 50" stroke="currentColor" strokeWidth="6" fill="none" /><circle cx="15" cy="50" r="8" fill="currentColor" /></svg>);
+const GhostBoomPreview: React.FC = () => (<svg viewBox="0 0 100 100" className="text-slate-300"><path d="M10 50 L 90 50 M80 40 L90 50 L80 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><text x="50" y="55" textAnchor="middle" fontSize="30">👻</text></svg>);
 
 // Victory Components
 const DefaultVictoryEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(30).fill(0).map((_, i) => (<div key={i} className="absolute w-2 h-2 bg-yellow-300 rounded-full animate-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s` }} />))}</div>);
-const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
-const FireworksEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(12)].map((_, i) => (<div key={i} className="absolute animate-firework-container" style={{left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%`, animationDelay: `${i * 0.25}s`,}}>{[...Array(30)].map((_, p_i) => (<div key={p_i} className="absolute w-[5px] h-[5px] rounded-full animate-firework-particle" style={{'--firework-color': ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA'][p_i % 5], transform: `rotate(${p_i * (360/30)}deg)`} as React.CSSProperties}></div>))}</div>))}</div>);
+const ConfettiEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">{[...Array(50)].map((_, i) => (<div key={i} className="absolute h-4 animate-confetti" style={{ width: '8px', left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 0.2}s`, animationDuration: `${2 + Math.random() * 2}s`, backgroundColor: ['#34D399', '#F472B6', '#60A5FA', '#FBBF24'][i % 4]}}></div>))}</div>);
+const FireworksEffect: React.FC = () => {
+    const colors = ['#F472B6', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#FDE047'];
+    return (
+        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="absolute animate-firework-container" style={{
+                    left: `${15 + Math.random() * 70}%`,
+                    top: `${20 + Math.random() * 60}%`,
+                    transform: `scale(${0.8 + Math.random() * 0.4})`,
+                    animationDelay: `${i * 0.4}s`,
+                }}>
+                    {[...Array(30)].map((_, p_i) => {
+                        const angle = Math.random() * 360;
+                        const distance = 50 + Math.random() * 50;
+                        return (
+                            <div key={p_i} className="absolute w-1.5 h-1.5 rounded-full animate-firework-particle" style={{
+                                backgroundColor: colors[p_i % colors.length],
+                                // @ts-ignore
+                                '--angle': `${angle}deg`,
+                                '--distance': `${distance}px`,
+                                '--duration': `${0.8 + Math.random() * 0.5}s`,
+                            }} />
+                        )
+                    })}
+                </div>
+            ))}
+        </div>
+    );
+};
 const StarlightEffect: React.FC = () => (<div className="absolute inset-0 pointer-events-none z-10">{Array(25).fill(0).map((_, i) => (<div key={i} className="animate-starlight" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, transform: `scale(${0.5 + Math.random() * 0.5})` }}>✨</div>))}</div>);
 
 // Boom Components
@@ -390,6 +498,21 @@ const MagicMissileEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRe
   if (!winnerCoords || !loserCoords) return null;
   return <div className="fixed inset-0 pointer-events-none z-50"><div className="absolute w-8 h-8 rounded-full bg-purple-500 animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div><div className="animate-boom-impact" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}></div></div>
 }
+const GhostBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: DOMRect }> = ({ winnerCoords, loserCoords }) => {
+  const start = getCoords(winnerCoords);
+  const end = getCoords(loserCoords);
+  if (!winnerCoords || !loserCoords) return null;
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      <div className="absolute text-5xl animate-boom-travel-vanish" style={{'--start-x': `${start.x}px`, '--start-y': `${start.y}px`, '--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>👻</div>
+      <div className="animate-boom-ghost-wail" style={{'--end-x': `${end.x}px`, '--end-y': `${end.y}px`} as React.CSSProperties}>
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="absolute text-2xl top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transform: `rotate(${i * 45}deg) translateY(-50px)`}}>👻</div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // Styles for Victory and Boom effects
 const getVictoryAndBoomStyles = () => `
@@ -397,20 +520,20 @@ const getVictoryAndBoomStyles = () => `
   @keyframes particle { 0% { transform: scale(1) translateY(0); opacity: 1; } 100% { transform: scale(0) translateY(-100px); opacity: 0; } }
   .animate-particle { animation: particle 2s ease-out forwards; }
   /* Victory: Confetti */
-  @keyframes confetti-fall { from { transform: translateY(-100vh) rotate(0deg); } to { transform: translateY(100vh) rotate(1080deg); } }
+  @keyframes confetti-fall { from { transform: translateY(-20vh) rotate(0deg); } to { transform: translateY(100vh) rotate(1080deg); } }
   .animate-confetti { animation: confetti-fall linear infinite; }
   /* Victory: Starlight */
   @keyframes starlight-twinkle { 0%, 100% { transform: scale(0.5); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px currentColor); } }
   .animate-starlight { position: absolute; color: #fef08a; font-size: 1.5rem; animation: starlight-twinkle 2s ease-in-out infinite; }
-  /* Victory: Fireworks (IMPROVED VISIBILITY) */
-  @keyframes firework-particle-burst { 
-    0% { transform: translateX(0) scale(1.2); opacity: 1; } 
-    100% { transform: translateX(120px) scale(0); opacity: 0; } 
+  
+  /* Victory: Fireworks */
+  @keyframes firework-burst {
+    0% { transform: rotate(var(--angle)) translateY(0) scale(1.5); opacity: 1; }
+    100% { transform: rotate(var(--angle)) translateY(var(--distance)) scale(0); opacity: 0; }
   }
-  .animate-firework-particle { 
-    animation: firework-particle-burst 1.2s ease-out forwards; 
-    background-color: var(--firework-color);
-    filter: drop-shadow(0 0 6px var(--firework-color)) brightness(1.2);
+  .animate-firework-particle {
+    animation: firework-burst var(--duration) cubic-bezier(0.2, 0.8, 0.7, 1) forwards;
+    filter: drop-shadow(0 0 4px currentColor);
   }
   .animate-firework-container { opacity: 0; animation: firework-fade-in 0.1s linear forwards; animation-delay: inherit; }
   @keyframes firework-fade-in { to { opacity: 1; } }
@@ -443,6 +566,21 @@ const getVictoryAndBoomStyles = () => `
     animation: boom-impact-flash 0.4s ease-out forwards;
     animation-delay: 0.85s; /* Delay until travel is almost complete */
   }
+
+  /* Boom: Ghostly Wail Impact */
+  @keyframes boom-ghost-wail {
+      from { transform: scale(0) rotate(0deg); opacity: 1; }
+      to { transform: scale(1) rotate(360deg); opacity: 0; }
+  }
+  .animate-boom-ghost-wail {
+      position: fixed;
+      left: var(--end-x); top: var(--end-y);
+      width: 150px; height: 150px;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: boom-ghost-wail 0.8s ease-out forwards;
+      animation-delay: 0.85s;
+  }
 `;
 export const VictoryAndBoomStyles: React.FC = () => (<style>{getVictoryAndBoomStyles()}</style>);
 
@@ -459,6 +597,7 @@ export const DEFAULT_BOOM_EFFECT: BoomEffect = { id: 'boom_heart', name: 'Heart'
 export const BOOM_EFFECTS: BoomEffect[] = [
     { id: 'boom_rocket', name: 'Rocket Barrage', component: RocketBoomEffect, previewComponent: RocketBoomPreview },
     { id: 'boom_missile', name: 'Magic Missile', component: MagicMissileEffect, previewComponent: MagicMissilePreview },
+    { id: 'boom_ghost', name: 'Ghostly Wail', component: GhostBoomEffect, previewComponent: GhostBoomPreview },
 ];
 
 // --- AI Bot Profiles ---
@@ -496,5 +635,5 @@ export const ALL_COSMETICS: Cosmetic[] = [
   { id: DEFAULT_BOOM_EFFECT.id, name: DEFAULT_BOOM_EFFECT.name, type: 'boom', price: 0, item: DEFAULT_BOOM_EFFECT },
   ...BOOM_EFFECTS.map(item => ({ id: item.id, name: item.name, type: 'boom' as const, price: 1000, item })),
   // Emojis
-  ...EMOJIS.map((item, index) => ({ id: item.id, name: item.name, type: 'emoji' as const, price: index < 6 ? 0 : 50, item })),
+  ...EMOJIS.map((item) => ({ id: item.id, name: item.name, type: 'emoji' as const, price: (item.id === 'emoji_wave' || item.id === 'emoji_think') ? 0 : 50, item })),
 ];

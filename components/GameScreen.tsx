@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useGameLogic } from '../hooks/useGameLogic';
-import { getAIMove } from '../services/geminiService';
+import { getAIMove } from '../services/aiService';
 import { updateOpeningBook } from '../services/openingBook';
 import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import Modal from './Modal';
@@ -163,7 +163,7 @@ const PlayerInfo = React.forwardRef<HTMLDivElement, PlayerInfoProps>(({ name, av
 
 // --- GameOver Modal Content ---
 const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeout' | null, timedOutPlayer: Player | null, playerMark: Player, onReset: () => void, onExit: () => void, playerLevel: number, playerXp: number }> = ({show, winner, timedOutPlayer, playerMark, onReset, onExit, playerLevel, playerXp}) => {
-    const [leaveCountdown, setLeaveCountdown] = useState(5);
+    const [leaveCountdown, setLeaveCountdown] = useState(10);
     const [animationStage, setAnimationStage] = useState<'start' | 'filling' | 'levelUp' | 'done'>('start');
     const [displayLevel, setDisplayLevel] = useState(playerLevel);
 
@@ -197,8 +197,6 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
     const animatedCoins = useAnimatedCounter(coinsEarned, animationStage !== 'start');
     const animatedXp = useAnimatedCounter(xpEarned, animationStage !== 'start');
     
-    // FIX: Replaced the getTitle() function and call with a derived constant.
-    // This is a cleaner pattern and avoids potential issues with function calls inside the render body.
     const title = useMemo(() => {
         if (winner === 'timeout') return didPlayerTimeout ? "TIME'S UP!" : "OPPONENT TIMED OUT";
         if (isWin) return "YOU WIN!";
@@ -212,10 +210,10 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
         let countdownInterval: ReturnType<typeof setInterval> | null = null;
         let animationTimer: ReturnType<typeof setTimeout> | null = null;
         if (show) {
+            setLeaveCountdown(10); // Reset countdown when shown
             countdownInterval = setInterval(() => {
                 setLeaveCountdown(prev => {
                     if (prev <= 1) {
-                        if(countdownInterval) clearInterval(countdownInterval);
                         onExit();
                         return 0;
                     }
@@ -243,7 +241,7 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
         } else {
             setAnimationStage('start');
             setDisplayLevel(playerLevel);
-            setLeaveCountdown(5);
+            setLeaveCountdown(10);
         }
     }, [show, onExit, didLevelUp, newLevel, playerLevel]);
 
@@ -480,6 +478,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
         }
     };
     
+    // FIX: Updated the call to startGame to align with its new parameterless definition.
     const handleGameReset = useCallback(() => {
         playSound('click');
         setShowGameOverModal(false);
@@ -598,29 +597,31 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
 
         <div className="w-full max-w-xl mx-auto relative z-10 flex flex-col h-full justify-center">
             <header className="flex justify-center items-center w-full">
-                <div className="text-center">
+                <div className="text-center relative">
                     <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400" style={{ textShadow: '0 2px 10px rgba(100, 200, 255, 0.3)' }}>
                         Caro AI Arena
                     </h1>
-                     <div className="relative">
-                        <div className="flex items-center justify-center gap-4 mt-1">
-                            <button onClick={() => { playSound('click'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
-                            <button onClick={undoMove} disabled={!canUndo} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg></button>
-                            <button onClick={() => { playSound('click'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
-                        </div>
-                        {isEmojiPanelOpen && (
-                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 p-2 rounded-lg grid grid-rows-2 grid-flow-col gap-2 animate-fade-in-down z-20">
-                               {ownedEmojis.map(e => <button key={e.id} onClick={() => showEmoji(e, true)} className="text-3xl hover:scale-125 transition-transform">{e.emoji}</button>)}
+                    <div className="flex items-center justify-center gap-4 mt-1">
+                        <button onClick={() => { playSound('click'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                        <button onClick={undoMove} disabled={!canUndo} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg></button>
+                        <button onClick={() => { playSound('click'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+                         {isEmojiPanelOpen && (
+                            <div 
+                                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800/90 backdrop-blur-sm p-2 rounded-lg flex flex-wrap justify-center gap-2 animate-fade-in-down z-30" 
+                                style={{width: '280px'}}
+                                onMouseLeave={() => setEmojiPanelOpen(false)}
+                            >
+                               {ownedEmojis.map(e => <button key={e.id} onClick={() => showEmoji(e, true)} className="text-3xl w-12 h-12 flex items-center justify-center rounded-md hover:bg-slate-700/50 hover:scale-110 transition-all">{e.emoji}</button>)}
                             </div>
                         )}
                     </div>
                 </div>
             </header>
-            
+
             <main className="flex-grow flex flex-col justify-center relative">
                  {gameOverMessage && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 rounded-lg pointer-events-none">
-                        <h2 className={`text-6xl font-black animate-scale-in-out ${
+                    <div className="absolute top-28 left-1/2 -translate-x-1/2 w-max px-8 py-4 bg-slate-900/80 border border-slate-700 rounded-2xl shadow-lg z-30 pointer-events-none animate-fade-in-down-then-out">
+                        <h2 className={`text-5xl font-black ${
                             gameOverMessage.includes('Win') ? 'text-green-400' : gameOverMessage.includes('Lose') ? 'text-red-500' : 'text-yellow-400'
                         }`} style={{ textShadow: '0 0 15px currentColor' }}>
                             {gameOverMessage}
@@ -733,30 +734,35 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
                 to { opacity: 1; transform: translateY(0); }
             }
             .animate-fade-in-down { animation: fade-in-down 0.2s ease-out forwards; }
-            @keyframes emote-fall-and-sway {
-                0% {
-                    transform: translateY(-20px) translateX(0px) scale(0.8) rotate(-5deg);
-                    opacity: 0;
-                }
-                20% {
-                    transform: translateY(0px) translateX(-10px) scale(1.2) rotate(5deg);
-                    opacity: 1;
+            @keyframes emote-multi-bounce {
+                0% { transform: translateY(-10vh) scale(0.3); opacity: 0; }
+                20% { opacity: 1; }
+                45% {
+                    transform: translateY(35vh) scale(1);
+                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); /* Ease-in for acceleration */
                 }
                 50% {
-                    transform: translateY(25vh) translateX(10px) scale(0.9) rotate(-8deg);
-                    opacity: 1;
+                    transform: translateY(38vh) scaleX(1.1) scaleY(0.9);
+                    animation-timing-function: ease-out; /* Quick squash */
+                }
+                65% {
+                    transform: translateY(25vh) scaleX(0.95) scaleY(1.05);
+                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); /* Ease-in for gravity on bounce */
+                }
+                70% {
+                    transform: translateY(38vh) scaleX(1.05) scaleY(0.95);
+                    animation-timing-function: ease-out;
                 }
                 80% {
-                    transform: translateY(50vh) translateX(-5px) scale(0.6) rotate(3deg);
-                    opacity: 1;
+                    transform: translateY(32vh) scaleX(0.98) scaleY(1.02);
+                    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
                 }
-                100% {
-                    transform: translateY(65vh) translateX(0px) scale(0.4) rotate(10deg);
-                    opacity: 0;
-                }
+                85% { transform: translateY(38vh) scale(1); }
+                90% { transform: translateY(38vh) scale(1); opacity: 1; }
+                100% { transform: translateY(36vh) scale(0.8); opacity: 0; }
             }
             .animate-emote-fall {
-                animation: emote-fall-and-sway 3.2s ease-out forwards;
+                animation: emote-multi-bounce 3.2s forwards;
             }
             @keyframes last-move-glow {
                 0%, 100% {
@@ -769,13 +775,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, onGameEnd, theme, 
             .last-move-highlight {
                 animation: last-move-glow 1.5s ease-in-out infinite;
             }
-            @keyframes scale-in-out {
-                0% { transform: scale(0.5); opacity: 0; }
-                50% { transform: scale(1.1); opacity: 1; }
-                100% { transform: scale(1); opacity: 1; }
+            @keyframes fade-in-down-then-out {
+                0% { transform: translateY(-50px) translateX(-50%) scale(0.8); opacity: 0; }
+                20% { transform: translateY(0) translateX(-50%) scale(1); opacity: 1; }
+                80% { transform: translateY(0) translateX(-50%) scale(1); opacity: 1; }
+                100% { transform: translateY(20px) translateX(-50%) scale(0.9); opacity: 0; }
             }
-            .animate-scale-in-out {
-                animation: scale-in-out 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            .animate-fade-in-down-then-out {
+                animation: fade-in-down-then-out 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             }
         `}</style>
     </div>

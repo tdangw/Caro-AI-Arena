@@ -1,9 +1,3 @@
-/**
- * NOTE: This file contains the logic for a local AI opponent.
- * It uses the Minimax algorithm to calculate the best move and does NOT
- * connect to or use the Google Gemini API.
- */
-
 import type { BoardState, Player, CellState } from '../types';
 import { BOARD_SIZE, WINNING_LENGTH } from '../constants';
 import { loadOpeningBook, getMoveFromBook, type OpeningBook } from './openingBook';
@@ -248,12 +242,12 @@ const findBestMoveWithMinimax = (board: BoardState, aiPlayer: Player, depth: num
 
 
 // Asynchronous, non-blocking recursive version for the 'hard' AI to prevent UI freezing
-const minimaxAsync = async (board: BoardState, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, aiPlayer: Player, scoreFunction: (b: BoardState, p: Player) => number, nodeCounter: { count: number }): Promise<{ score: number; move?: { row: number; col: number } }> => {
+const minimaxAsync = async (board: BoardState, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, aiPlayer: Player, scoreFunction: (b: BoardState, p: Player) => number, nodeCounter: { count: number }, movesToConsider?: { row: number; col: number }[]): Promise<{ score: number; move?: { row: number; col: number } }> => {
     if (depth === 0 || checkWin(board, 'X') || checkWin(board, 'O')) {
         return { score: scoreFunction(board, aiPlayer) };
     }
 
-    const possibleMoves = getValidMoves(board);
+    const possibleMoves = movesToConsider || getValidMoves(board);
     if (possibleMoves.length === 0) {
         return { score: scoreFunction(board, aiPlayer) };
     }
@@ -322,8 +316,36 @@ const findBestMoveWithMinimaxAsync = async (board: BoardState, aiPlayer: Player,
         }
     }
 
-    // If no immediate threats, run the fully async minimax.
-    const { move } = await minimaxAsync(board, depth, -Infinity, Infinity, true, aiPlayer, scoreFunction, { count: 0 });
+    // --- Optimization: Improved Move Ordering ---
+    // Score each possible move based on its offensive potential (aiScore)
+    // and its defensive necessity (blocking a good human move).
+    const scoredMoves = [];
+    for (const move of emptyCells) {
+        // Score for AI's move
+        const aiBoard = board.map(r => [...r]);
+        aiBoard[move.row][move.col] = aiPlayer;
+        const aiScore = scoreFunction(aiBoard, aiPlayer);
+        
+        // Score for Human's potential move in the same spot
+        const humanBoard = board.map(r => [...r]);
+        humanBoard[move.row][move.col] = humanPlayer;
+        // Score from AI's perspective (a good human move will be a large negative number)
+        const humanScore = scoreFunction(humanBoard, aiPlayer); 
+        
+        // The move's priority is its own potential score plus the threat it blocks.
+        // We subtract humanScore because it's negative for threats, effectively adding the threat value.
+        const totalScore = aiScore - humanScore; 
+        scoredMoves.push({ move, score: totalScore });
+    }
+
+    scoredMoves.sort((a, b) => b.score - a.score);
+
+    // Limit the deep search to only the top N most promising moves.
+    const movesToSearch = scoredMoves.slice(0, 10).map(m => m.move);
+
+
+    // If no immediate threats, run the fully async minimax on the pruned list of moves.
+    const { move } = await minimaxAsync(board, depth, -Infinity, Infinity, true, aiPlayer, scoreFunction, { count: 0 }, movesToSearch);
     
     if (move && board[move.row]?.[move.col] === null) {
         return move;
@@ -369,7 +391,7 @@ export const getAIMove = async (
             depth = 2;
             break;
         case 'hard':
-            depth = 3;
+            depth = 4; // Increased depth for smarter play
             break;
         default:
             depth = 1;

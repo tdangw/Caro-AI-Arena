@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { BoardState, Player } from '../types';
 import { BOARD_SIZE, WINNING_LENGTH, INITIAL_GAME_TIME, TURN_TIME } from '../constants';
@@ -167,6 +168,7 @@ export const useGameLogic = (playerMark: Player = 'X', isPaused: boolean = false
         }
     }, [board, currentPlayer, isGameOver, checkWin, isDecidingFirst, totalGameTime]);
 
+    // FIX: Updated startGame to be parameterless for clarity and to fix an argument mismatch error.
     const startGame = useCallback(() => {
         stopTimers();
         setBoard(createEmptyBoard());
