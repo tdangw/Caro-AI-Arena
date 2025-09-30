@@ -51,7 +51,15 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               return <span className="text-4xl">{(cosmetic.item as Emoji).emoji}</span>
           case 'theme': {
               const theme = cosmetic.item as GameTheme;
-              return <div className={`w-16 h-16 rounded-md flex items-center justify-center p-2 ${theme.boardBg}`}><div className={`w-10 h-10 rounded ${theme.cellBg} border-2 ${theme.gridColor}`} /></div>;
+              return (
+                <div 
+                    className={`w-16 h-16 rounded-md flex items-center justify-center p-2 bg-cover bg-center ${theme.boardBg}`}
+                    style={theme.boardBgImage ? { 
+                        backgroundImage: `url(${theme.boardBgImage})`,
+                    } : {}}
+                >
+                    <div className={`w-10 h-10 rounded ${theme.cellBg} border-2 ${theme.gridColor}`} />
+                </div>);
           }
           case 'effect': {
               const PreviewComp = (cosmetic.item as PieceEffect).previewComponent;

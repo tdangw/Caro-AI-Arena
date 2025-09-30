@@ -97,5 +97,26 @@ export const useSound = () => {
         }
     }, [gameState.isMusicOn, gameState.activeMusicUrl, stopMusic]);
 
+    // Effect to handle page visibility changes (e.g., switching tabs, minimizing, screen off on mobile)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // If the page is hidden, pause the music
+                if (musicPlayerRef.current) {
+                    musicPlayerRef.current.pause();
+                }
+            } else {
+                // If the page becomes visible again, resume music if it's supposed to be on
+                playMusic();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [playMusic]); // Depend on playMusic to get the latest function with correct state
+
     return { playSound, playMusic, stopMusic };
 };

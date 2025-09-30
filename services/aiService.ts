@@ -121,7 +121,6 @@ const evaluateWindowAdvanced = (window: CellState[], player: Player) => {
 
 const scorePositionAdvanced = (board: BoardState, player: Player) => {
     let score = 0;
-    const directions = [ [0, 1], [1, 0], [1, 1], [1, -1] ];
 
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
@@ -132,28 +131,29 @@ const scorePositionAdvanced = (board: BoardState, player: Player) => {
                  score -= 7 - (Math.abs(r - 7) + Math.abs(c - 7)) / 2;
             }
 
-            for (const [dr, dc] of directions) {
-                // Heuristic for patterns of 5
-                if (c <= BOARD_SIZE - WINNING_LENGTH) {
-                    const window5 = [];
-                    for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r][c+i]);
-                    score += evaluateWindowAdvanced(window5, player);
-                }
-                if (r <= BOARD_SIZE - WINNING_LENGTH) {
-                    const window5 = [];
-                    for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r+i][c]);
-                    score += evaluateWindowAdvanced(window5, player);
-                }
-                if (r <= BOARD_SIZE - WINNING_LENGTH && c <= BOARD_SIZE - WINNING_LENGTH) {
-                    const window5 = [];
-                    for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r+i][c+i]);
-                    score += evaluateWindowAdvanced(window5, player);
-                }
-                if (r >= WINNING_LENGTH - 1 && c <= BOARD_SIZE - WINNING_LENGTH) {
-                    const window5 = [];
-                    for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r-i][c+i]);
-                    score += evaluateWindowAdvanced(window5, player);
-                }
+            // Heuristic for horizontal patterns of 5
+            if (c <= BOARD_SIZE - WINNING_LENGTH) {
+                const window5: CellState[] = [];
+                for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r][c+i]);
+                score += evaluateWindowAdvanced(window5, player);
+            }
+            // Heuristic for vertical patterns of 5
+            if (r <= BOARD_SIZE - WINNING_LENGTH) {
+                const window5: CellState[] = [];
+                for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r+i][c]);
+                score += evaluateWindowAdvanced(window5, player);
+            }
+            // Heuristic for diagonal (down-right) patterns of 5
+            if (r <= BOARD_SIZE - WINNING_LENGTH && c <= BOARD_SIZE - WINNING_LENGTH) {
+                const window5: CellState[] = [];
+                for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r+i][c+i]);
+                score += evaluateWindowAdvanced(window5, player);
+            }
+            // Heuristic for anti-diagonal (up-right) patterns of 5
+            if (r >= WINNING_LENGTH - 1 && c <= BOARD_SIZE - WINNING_LENGTH) {
+                const window5: CellState[] = [];
+                for(let i=0; i<WINNING_LENGTH; i++) window5.push(board[r-i][c+i]);
+                score += evaluateWindowAdvanced(window5, player);
             }
         }
     }

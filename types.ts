@@ -8,7 +8,8 @@ export type GameMode = 'pvp' | 'pve';
 export interface GameTheme {
   id: string;
   name: string;
-  boardBg: string;
+  boardBg: string; // Fallback color
+  boardBgImage?: string; // Image URL
   cellBg: string;
   gridColor: string;
   nameColor: string;

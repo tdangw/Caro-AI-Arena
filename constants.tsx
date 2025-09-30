@@ -244,15 +244,15 @@ const SummerThemeDecorator: React.FC = React.memo(() => (
 
 
 // --- Game Themes ---
-export const DEFAULT_THEME: GameTheme = { id: 'theme_default', name: 'Default', boardBg: 'bg-slate-900', cellBg: 'bg-transparent', gridColor: 'border-slate-600', nameColor: 'text-white' };
+export const DEFAULT_THEME: GameTheme = { id: 'theme_default', name: 'Default', boardBg: 'bg-slate-900', cellBg: 'bg-transparent', gridColor: 'border-slate-500', nameColor: 'text-white' };
 
 export const THEMES: GameTheme[] = [
-    { id: 'theme_ice', name: 'Ice', boardBg: 'bg-gradient-to-br from-[#0c1a3e] to-[#122a64]', cellBg: 'bg-transparent', gridColor: 'border-cyan-400/30', nameColor: 'text-cyan-100', decoratorComponent: IceThemeDecorator },
-    { id: 'theme_retro', name: 'Retro', boardBg: 'bg-gradient-to-br from-[#281e36] to-[#4a2f58]', cellBg: 'bg-transparent', gridColor: 'border-yellow-400/30', nameColor: 'text-yellow-100', decoratorComponent: RetroThemeDecorator },
-    { id: 'theme_ruby', name: 'Ruby', boardBg: 'bg-gradient-to-br from-[#3b0f2d] to-[#6d1b51]', cellBg: 'bg-transparent', gridColor: 'border-pink-400/30', nameColor: 'text-pink-100', decoratorComponent: RubyThemeDecorator },
-    { id: 'theme_autumn', name: 'Autumn', boardBg: 'bg-gradient-to-br from-[#4a2525] to-[#7b3f3f]', cellBg: 'bg-transparent', gridColor: 'border-orange-400/30', nameColor: 'text-orange-100', decoratorComponent: AutumnThemeDecorator },
-    { id: 'theme_spring', name: 'Spring', boardBg: 'bg-gradient-to-br from-[#4d7c5a] to-[#88b894]', cellBg: 'bg-transparent', gridColor: 'border-pink-200/40', nameColor: 'text-pink-50', decoratorComponent: SpringThemeDecorator },
-    { id: 'theme_summer', name: 'Summer', boardBg: 'bg-gradient-to-br from-[#005f73] to-[#0a9396]', cellBg: 'bg-transparent', gridColor: 'border-yellow-200/30', nameColor: 'text-yellow-50', decoratorComponent: SummerThemeDecorator },
+    { id: 'theme_ice', name: 'Ice', boardBg: 'bg-[#0c1a3e]', boardBgImage: 'assets/themes/ice.png', cellBg: 'bg-transparent', gridColor: 'border-cyan-400/50', nameColor: 'text-cyan-100', decoratorComponent: IceThemeDecorator },
+    { id: 'theme_retro', name: 'Retro', boardBg: 'bg-[#281e36]', boardBgImage: 'assets/themes/retro.png', cellBg: 'bg-transparent', gridColor: 'border-yellow-400/50', nameColor: 'text-yellow-100', decoratorComponent: RetroThemeDecorator },
+    { id: 'theme_ruby', name: 'Ruby', boardBg: 'bg-[#3b0f2d]', boardBgImage: 'assets/themes/ruby.png', cellBg: 'bg-transparent', gridColor: 'border-pink-400/50', nameColor: 'text-pink-100', decoratorComponent: RubyThemeDecorator },
+    { id: 'theme_autumn', name: 'Autumn', boardBg: 'bg-[#4a2525]', boardBgImage: 'assets/themes/autumn.png', cellBg: 'bg-transparent', gridColor: 'border-orange-400/50', nameColor: 'text-orange-100', decoratorComponent: AutumnThemeDecorator },
+    { id: 'theme_spring', name: 'Spring', boardBg: 'bg-[#4d7c5a]', boardBgImage: 'assets/themes/spring.png', cellBg: 'bg-transparent', gridColor: 'border-pink-200/60', nameColor: 'text-pink-50', decoratorComponent: SpringThemeDecorator },
+    { id: 'theme_summer', name: 'Summer', boardBg: 'bg-[#005f73]', boardBgImage: 'assets/themes/summer.png', cellBg: 'bg-transparent', gridColor: 'border-yellow-200/50', nameColor: 'text-yellow-50', decoratorComponent: SummerThemeDecorator },
 ];
 
 // --- Piece Styles ---
@@ -606,9 +606,9 @@ export const BOOM_EFFECTS: BoomEffect[] = [
 
 // --- AI Bot Profiles ---
 export const BOTS: BotProfile[] = [
-    { id: 'bot_easy', name: 'Rookie', avatar: 'assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'A friendly bot that is still learning the ropes. Great for beginners.' },
-    { id: 'bot_medium', name: 'Adept', avatar: 'assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'A seasoned player with a good grasp of strategy. Provides a solid challenge.' },
-    { id: 'bot_hard', name: 'Master', avatar: 'assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'A grandmaster of Caro. Thinks several moves ahead. Defeat is likely.' },
+    { id: 'bot_easy', name: 'Meow', avatar: 'assets/avatars/bot_1.png', level: 1, skillLevel: 'easy', description: 'Một chú mèo nhỏ mới tập chơi! Tuyệt vời cho những màn đấu không căng não.' },
+    { id: 'bot_medium', name: 'Nova', avatar: 'assets/avatars/bot_2.png', level: 5, skillLevel: 'medium', description: 'Một cô gái xinh đẹp đã thành thạo chiến lược. Hứa hẹn một ván đấu mãn nhãn.' },
+    { id: 'bot_hard', name: 'Kael', avatar: 'assets/avatars/bot_3.png', level: 10, skillLevel: 'hard', description: 'Một hacker trẻ, suy nghĩ rất kỹ trước khi hành động, thất bại là điều hiển nhiên.' },
 ];
 
 // --- Music Tracks ---

@@ -107,7 +107,11 @@ const AppContent: React.FC = () => {
     
     const handleGameEnd = useCallback((result: 'win' | 'loss' | 'draw') => {
         const botId = activeBot?.id;
-        if (!botId) return; // Should not happen if in game view
+        
+        // This function now also handles navigating back to the menu
+        handleBackToMenu();
+
+        if (!botId) return; 
 
         setOverlay(null); // Close any overlays when game ends
         if (result === 'win') {
@@ -123,7 +127,7 @@ const AppContent: React.FC = () => {
             addXp(XP_REWARD.loss);
             incrementLosses(botId);
         }
-    }, [addCoins, addXp, incrementWins, incrementLosses, incrementDraws, activeBot]);
+    }, [addCoins, addXp, incrementWins, incrementLosses, incrementDraws, activeBot, handleBackToMenu]);
 
     const renderView = () => {
         switch (view) {
@@ -139,8 +143,7 @@ const AppContent: React.FC = () => {
                 }
                 return <GameScreen 
                             bot={activeBot} 
-                            onExit={handleBackToMenu} 
-                            onGameEnd={handleGameEnd} 
+                            onExit={handleGameEnd} 
                             theme={gameState.activeTheme} 
                             pieces={{ X: gameState.activePieceX, O: gameState.activePieceO }}
                             playerInfo={{name: gameState.playerName, level: gameState.playerLevel, avatar: gameState.activeAvatar, xp: gameState.playerXp, wins: gameState.wins, losses: gameState.losses}}
