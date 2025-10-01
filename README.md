@@ -44,7 +44,7 @@ Hệ thống avatar giờ đây sử dụng các đường dẫn tệp trực ti
 *   Thêm một đối tượng mới vào mảng này để định nghĩa avatar của bạn. Mỗi đối tượng cần có:
     *   `id`: một chuỗi định danh duy nhất (ví dụ: `avatar_my_cool_one`).
     *   `name`: Tên sẽ hiển thị trong Shop và Inventory (ví dụ: 'Cool Avatar').
-    *   `url`: **Đường dẫn đến tệp hình ảnh của bạn**, tính từ thư mục `public`. Ví dụ: `/assets/avatars/my_cool_avatar.png`.
+    *   `url`: **Đường dẫn đến tệp hình ảnh của bạn**, tính từ thư mục `public`. Ví dụ: `assets/avatars/my_cool_avatar.png`.
 
 **Ví dụ:**
 
@@ -52,10 +52,10 @@ Hệ thống avatar giờ đây sử dụng các đường dẫn tệp trực ti
 // Trong file: constants.tsx
 
 export const AVATARS: Avatar[] = [
-    { id: 'avatar_2', name: 'Rebel', url: '/assets/avatars/avatar_2.png' },
-    { id: 'avatar_3', name: 'Scholar', url: '/assets/avatars/avatar_3.png' },
+    { id: 'avatar_2', name: 'Rebel', url: 'assets/avatars/avatar_2.png' },
+    { id: 'avatar_3', name: 'Scholar', url: 'assets/avatars/avatar_3.png' },
     // Thêm avatar mới của bạn ở đây
-    { id: 'avatar_my_cool_one', name: 'Cool Avatar', url: '/assets/avatars/my_cool_avatar.png' },
+    { id: 'avatar_my_cool_one', name: 'Cool Avatar', url: 'assets/avatars/my_cool_avatar.png' },
 ];
 ```
 
@@ -105,9 +105,9 @@ Bạn có thể thêm nhiều bản nhạc nền và lựa chọn chúng trong m
 // Trong file: constants.tsx
 
 export const MUSIC_TRACKS: MusicTrack[] = [
-    { id: 'music_default', name: 'Celestial', url: '/assets/sounds/music.mp3' },
-    { id: 'music_chill', name: 'Chillhop', url: '/assets/sounds/music_1.mp3' },
-    { id: 'music_action', name: 'Action', url: '/assets/sounds/music_2.mp3' },
+    { id: 'music_default', name: 'Celestial', url: 'assets/sounds/music.mp3' },
+    { id: 'music_chill', name: 'Chillhop', url: 'assets/sounds/music_1.mp3' },
+    { id: 'music_action', name: 'Action', url: 'assets/sounds/music_2.mp3' },
 ];
 ```
 

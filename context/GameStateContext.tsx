@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import type { Cosmetic, GameTheme, PieceStyle, Avatar, PieceEffect, VictoryEffect, BoomEffect } from '../types';
-import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS, MUSIC_TRACKS } from '../constants';
+import { DEFAULT_THEME, DEFAULT_PIECES_X, DEFAULT_PIECES_O, DEFAULT_AVATAR, getXpForNextLevel, THEMES, DEFAULT_EFFECT, DEFAULT_VICTORY_EFFECT, DEFAULT_BOOM_EFFECT, ALL_COSMETICS, MUSIC_TRACKS, COIN_REWARD, XP_REWARD } from '../constants';
 
 const DEFAULT_EMOJI_IDS = ALL_COSMETICS.filter(c => c.type === 'emoji' && c.price === 0).map(c => c.id);
 
@@ -25,16 +25,14 @@ interface GameState {
   isSoundOn: boolean;
   isMusicOn: boolean;
   activeMusicUrl: string;
+  lastProcessedGameId: string | null;
 }
 
 interface GameStateContextType {
   gameState: GameState;
   setPlayerName: (name: string) => void;
-  incrementWins: (botId: string) => void;
-  incrementLosses: (botId: string) => void;
-  incrementDraws: (botId: string) => void;
-  addCoins: (amount: number) => void;
-  addXp: (amount: number) => void;
+  applyGameResult: (result: 'win' | 'loss' | 'draw', botId: string, gameId: string | null) => void;
+  spendCoins: (amount: number) => boolean;
   purchaseCosmetic: (cosmetic: Cosmetic) => boolean;
   consumeEmoji: (emojiId: string) => void;
   equipTheme: (theme: GameTheme) => void;
@@ -83,6 +81,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
           emojiInventory: parsed.emojiInventory ?? {},
           botStats: parsed.botStats ?? {},
           draws: parsed.draws ?? 0,
+          lastProcessedGameId: parsed.lastProcessedGameId ?? null,
         };
       }
     } catch (error) {
@@ -109,6 +108,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
       isSoundOn: true,
       isMusicOn: true,
       activeMusicUrl: MUSIC_TRACKS[0].url,
+      lastProcessedGameId: null,
     };
   });
 
@@ -134,52 +134,64 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
     setGameState(prev => ({...prev, playerName: name}));
   }, []);
 
-  const incrementWins = useCallback((botId: string) => {
-    setGameState(prev => {
-        const newBotStats = { ...prev.botStats };
-        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
-        newBotStats[botId].wins += 1;
-        return { ...prev, wins: prev.wins + 1, botStats: newBotStats };
-    });
-  }, []);
+  const spendCoins = useCallback((amount: number): boolean => {
+    if (gameState.coins < amount) {
+      return false;
+    }
+    setGameState(prev => ({...prev, coins: prev.coins - amount}));
+    return true;
+  }, [gameState.coins]);
   
-  const incrementLosses = useCallback((botId: string) => {
+  const applyGameResult = useCallback((result: 'win' | 'loss' | 'draw', botId: string, gameId: string | null) => {
     setGameState(prev => {
-        const newBotStats = { ...prev.botStats };
-        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
-        newBotStats[botId].losses += 1;
-        return { ...prev, losses: prev.losses + 1, botStats: newBotStats };
-    });
-  }, []);
-  
-  const incrementDraws = useCallback((botId: string) => {
-    setGameState(prev => {
-        const newBotStats = { ...prev.botStats };
-        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
-        newBotStats[botId].draws += 1;
-        return { ...prev, draws: prev.draws + 1, botStats: newBotStats };
-    });
-  }, []);
+        if (gameId && prev.lastProcessedGameId === gameId) {
+            console.warn(`Attempted to process game result for gameId ${gameId} twice. Ignoring.`);
+            return prev;
+        }
 
-  const addCoins = useCallback((amount: number) => {
-    setGameState(prev => ({ ...prev, coins: prev.coins + amount }));
-  }, []);
-  
-  const addXp = useCallback((amount: number) => {
-    setGameState(prev => {
-        let newXp = prev.playerXp + amount;
+        const xpToAdd = XP_REWARD[result];
+        const coinsToAdd = COIN_REWARD[result];
+
+        let newXp = prev.playerXp + xpToAdd;
         let newLevel = prev.playerLevel;
         let xpNeeded = getXpForNextLevel(newLevel);
-        
         while (newXp >= xpNeeded) {
             newXp -= xpNeeded;
             newLevel++;
             xpNeeded = getXpForNextLevel(newLevel);
         }
 
-        return { ...prev, playerLevel: newLevel, playerXp: newXp };
+        const newBotStats = { ...prev.botStats };
+        if (!newBotStats[botId]) newBotStats[botId] = { wins: 0, losses: 0, draws: 0 };
+
+        let newWins = prev.wins;
+        let newLosses = prev.losses;
+        let newDraws = prev.draws;
+
+        if (result === 'win') {
+            newBotStats[botId].wins += 1;
+            newWins += 1;
+        } else if (result === 'draw') {
+            newBotStats[botId].draws += 1;
+            newDraws += 1;
+        } else {
+            newBotStats[botId].losses += 1;
+            newLosses += 1;
+        }
+
+        return {
+            ...prev,
+            coins: prev.coins + coinsToAdd,
+            playerXp: newXp,
+            playerLevel: newLevel,
+            wins: newWins,
+            losses: newLosses,
+            draws: newDraws,
+            botStats: newBotStats,
+            lastProcessedGameId: gameId || prev.lastProcessedGameId,
+        };
     });
-  }, []);
+}, []);
   
   const consumeEmoji = useCallback((emojiId: string) => {
     // Default emojis are not consumable
@@ -284,7 +296,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
 
   return (
-    <GameStateContext.Provider value={{ gameState, setPlayerName, incrementWins, incrementLosses, incrementDraws, addCoins, addXp, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic, equipMusic }}>
+    <GameStateContext.Provider value={{ gameState, setPlayerName, applyGameResult, spendCoins, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic, equipMusic }}>
       {children}
     </GameStateContext.Provider>
   );

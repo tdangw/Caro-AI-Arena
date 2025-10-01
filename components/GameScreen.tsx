@@ -72,8 +72,10 @@ const GameCell: React.FC<GameCellProps> = React.memo(({ state, onClick, isWinnin
         {state && (
            <div className={`w-full h-full p-1.5`}>
             <div className={`relative w-full h-full ${state === 'X' ? 'text-cyan-400' : 'text-pink-500'}`}>
-                <div className={`${playPlacementEffect ? effectIdClass : ''} ${isLastMove ? 'last-move-highlight' : ''}`}>
-                    {state === 'X' ? <PieceX /> : <PieceO />}
+                <div className={playPlacementEffect ? effectIdClass : ''}>
+                    <div className={isLastMove ? 'last-move-highlight' : ''}>
+                        {state === 'X' ? <PieceX /> : <PieceO />}
+                    </div>
                 </div>
             </div>
           </div>
@@ -160,7 +162,7 @@ const PlayerInfo = React.forwardRef<HTMLDivElement, PlayerInfoProps>(({ name, av
 });
 
 // --- GameOver Modal Content ---
-const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeout' | null, timedOutPlayer: Player | null, playerMark: Player, onReset: () => void, onExit: (result: 'win' | 'loss' | 'draw') => void, playerLevel: number, playerXp: number }> = ({show, winner, timedOutPlayer, playerMark, onReset, onExit, playerLevel, playerXp}) => {
+const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeout' | null, timedOutPlayer: Player | null, playerMark: Player, onReset: () => void, onExit: () => void, playerLevel: number, playerXp: number }> = ({show, winner, timedOutPlayer, playerMark, onReset, onExit, playerLevel, playerXp}) => {
     const [leaveCountdown, setLeaveCountdown] = useState(10);
     const [animationStage, setAnimationStage] = useState<'start' | 'filling' | 'levelUp' | 'done'>('start');
     const [displayLevel, setDisplayLevel] = useState(playerLevel);
@@ -174,19 +176,24 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
     const coinsEarned = show ? COIN_REWARD[outcome] : 0;
     
     // Calculate level up logic for display
-    let newLevel = playerLevel;
-    let finalXp = playerXp + xpEarned;
-    let xpForNext = getXpForNextLevel(newLevel);
-    let didLevelUp = false;
-    
-    if (show && finalXp >= xpForNext) {
-        didLevelUp = true;
-        while(finalXp >= xpForNext) {
-            finalXp -= xpForNext;
-            newLevel++;
-            xpForNext = getXpForNextLevel(newLevel);
-        }
-    }
+    const { didLevelUp, newLevel, finalXp } = useMemo(() => {
+      if (!show) {
+        return { didLevelUp: false, newLevel: playerLevel, finalXp: playerXp };
+      }
+      let currentLevel = playerLevel;
+      let currentXp = playerXp + xpEarned;
+      let xpForNext = getXpForNextLevel(currentLevel);
+      let hasLeveledUp = false;
+
+      while (currentXp >= xpForNext) {
+        hasLeveledUp = true;
+        currentXp -= xpForNext;
+        currentLevel++;
+        xpForNext = getXpForNextLevel(currentLevel);
+      }
+      return { didLevelUp: hasLeveledUp, newLevel: currentLevel, finalXp: currentXp };
+    }, [show, playerLevel, playerXp, xpEarned]);
+
 
     const initialXpPercent = (playerXp / getXpForNextLevel(playerLevel)) * 100;
     const finalXpPercent = didLevelUp ? 100 : ((playerXp + xpEarned) / getXpForNextLevel(playerLevel)) * 100;
@@ -212,7 +219,7 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
             countdownInterval = setInterval(() => {
                 setLeaveCountdown(prev => {
                     if (prev <= 1) {
-                        onExit(outcome);
+                        onExit();
                         return 0;
                     }
                     return prev - 1;
@@ -241,7 +248,7 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
             setDisplayLevel(playerLevel);
             setLeaveCountdown(10);
         }
-    }, [show, onExit, didLevelUp, newLevel, playerLevel, outcome]);
+    }, [show, onExit, didLevelUp, newLevel, playerLevel]);
 
 
     return (
@@ -294,7 +301,7 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
                     <button onClick={() => onReset()} className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg transition-colors text-lg">
                         Play again!
                     </button>
-                    <button onClick={() => onExit(outcome)} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                    <button onClick={() => onExit()} className="w-full max-w-sm bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                         Leave room ({leaveCountdown})
                     </button>
                 </div>
@@ -403,7 +410,7 @@ const SmoothTimerBar: React.FC<{ currentPlayer: Player | null; isPaused: boolean
 // --- GameScreen Main Component ---
 interface GameScreenProps {
   bot: BotProfile;
-  onExit: (result: 'win' | 'loss' | 'draw') => void;
+  onExit: () => void;
   theme: GameTheme;
   pieces: { X: PieceStyle, O: PieceStyle };
   playerInfo: { name: string, level: number, avatar: Avatar, xp: number, wins: number, losses: number };
@@ -419,8 +426,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     const playerMark: Player = 'X';
     const aiMark: Player = 'O';
 
-    const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory } = useGameLogic(playerMark, isPaused);
-    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic, spendCoins } = useGameState();
+    const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory, gameId } = useGameLogic(playerMark, isPaused);
+    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic, spendCoins, applyGameResult } = useGameState();
     const { playSound } = useSound();
 
     const [aiThinkingCell, setAiThinkingCell] = useState<{row: number, col: number} | null>(null);
@@ -441,7 +448,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     const isAiThinkingRef = useRef(false);
     const playerAvatarRef = useRef<HTMLDivElement>(null);
     const botAvatarRef = useRef<HTMLDivElement>(null);
-
+    
     const botStats = gameState.botStats[bot.id] || { wins: 0, losses: 0, draws: 0 };
 
     const ownedEmojis = useMemo(() => {
@@ -481,8 +488,13 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         playSound('click');
         setShowGameOverModal(false);
         setGameOverMessage(null);
-        startGame();
-    }, [startGame, playSound]);
+        // FIX: Reset victory effect states to prevent them from persisting into the next game.
+        setShowVictoryEffects(false);
+        setBoomCoords(null);
+        setWinnerPlayer(null);
+        // FIX: Pass the playerMark to startGame to satisfy the function's expected signature and start the next game.
+        startGame(playerMark);
+    }, [startGame, playSound, playerMark]);
     
     // Effect to calculate avatar positions for boom effects, only when needed.
     useEffect(() => {
@@ -503,6 +515,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
             const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
             const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
             
+            // Apply the game result immediately to update stats in real-time
+            if (bot?.id) {
+                applyGameResult(result, bot.id, gameId);
+            }
+
             if (result === 'win') {
                 playSound('win');
                 setGameOverMessage('You Win!');
@@ -520,7 +537,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
             const victoryEffectsTimer = setTimeout(() => {
                 setGameOverMessage(null); // Hide message when effects start
                 if (winner !== 'draw' && winner !== 'timeout') {
-                    setWinnerPlayer(winner);
+                    setWinnerPlayer(winner as Player);
                     setShowVictoryEffects(true);
                 }
             }, 2000); // Show message for 2 seconds
@@ -535,7 +552,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                 clearTimeout(modalTimer);
             };
         }
-    }, [isGameOver, winner, playerMark, currentPlayer, aiMark, moveHistory, playSound]);
+    }, [isGameOver, winner, playerMark, currentPlayer, aiMark, moveHistory, playSound, applyGameResult, bot?.id, gameId]);
 
     const fullMakeMove = useCallback((row: number, col: number) => {
         playSound('move');
@@ -790,15 +807,21 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                 animation: emote-gentle-fall 3s forwards;
             }
             @keyframes last-move-glow {
-                0%, 100% {
+                0% { /* Bright initial flash, like piece-glow */
+                    filter: drop-shadow(0 0 12px rgba(255, 255, 100, 1)) drop-shadow(0 0 6px rgba(255, 255, 100, 1)) brightness(1.5);
+                }
+                10% { /* Fade to the persistent glow state */
+                    filter: drop-shadow(0 0 10px rgba(255, 255, 100, 0.9));
+                }
+                55% { /* Pulsing animation mid-point */
                     filter: drop-shadow(0 0 4px rgba(255, 255, 100, 0.6));
                 }
-                50% {
+                100% { /* Return to the persistent glow state to complete the loop */
                     filter: drop-shadow(0 0 10px rgba(255, 255, 100, 0.9));
                 }
             }
             .last-move-highlight {
-                animation: last-move-glow 1.5s ease-in-out infinite;
+                animation: last-move-glow 2s ease-in-out infinite;
             }
             @keyframes fade-in-down-then-out {
                 0% { transform: translateY(-50px) translateX(-50%) scale(0.8); opacity: 0; }

@@ -5,7 +5,6 @@ import Shop from './components/Shop';
 import Inventory from './components/Inventory';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
 import type { BotProfile } from './types';
-import { COIN_REWARD, XP_REWARD } from './constants';
 import { useSound } from './hooks/useSound';
 
 type View = 'menu' | 'game' | 'shop' | 'inventory';
@@ -28,7 +27,7 @@ const AppContent: React.FC = () => {
     });
     const [overlay, setOverlay] = useState<Overlay>(null);
     const [hasInteracted, setHasInteracted] = useState(false);
-    const { gameState, addCoins, addXp, incrementWins, incrementLosses, incrementDraws } = useGameState();
+    const { gameState } = useGameState();
     const { playSound, playMusic, stopMusic } = useSound();
 
     // Effect to detect the first user interaction to allow audio playback, per browser policy.
@@ -105,29 +104,11 @@ const AppContent: React.FC = () => {
         setOverlay(null);
     }
     
-    const handleGameEnd = useCallback((result: 'win' | 'loss' | 'draw') => {
-        const botId = activeBot?.id;
-        
-        // This function now also handles navigating back to the menu
+    const handleGameEnd = useCallback(() => {
+        // The game result is now applied within GameScreen as soon as the game ends.
+        // This function is only responsible for navigating back to the main menu.
         handleBackToMenu();
-
-        if (!botId) return; 
-
-        setOverlay(null); // Close any overlays when game ends
-        if (result === 'win') {
-            addCoins(COIN_REWARD.win);
-            addXp(XP_REWARD.win);
-            incrementWins(botId);
-        } else if (result === 'draw') {
-            addCoins(COIN_REWARD.draw);
-            addXp(XP_REWARD.draw);
-            incrementDraws(botId);
-        } else { // Loss
-            addCoins(COIN_REWARD.loss);
-            addXp(XP_REWARD.loss);
-            incrementLosses(botId);
-        }
-    }, [addCoins, addXp, incrementWins, incrementLosses, incrementDraws, activeBot, handleBackToMenu]);
+    }, [handleBackToMenu]);
 
     const renderView = () => {
         switch (view) {
