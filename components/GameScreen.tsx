@@ -492,7 +492,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         setShowVictoryEffects(false);
         setBoomCoords(null);
         setWinnerPlayer(null);
-        // FIX: Pass the playerMark to startGame to satisfy the function's expected signature and start the next game.
+        // FIX: The startGame function was called without arguments, but it requires a `Player` to be passed to determine who starts the new game.
         startGame(playerMark);
     }, [startGame, playSound, playerMark]);
     

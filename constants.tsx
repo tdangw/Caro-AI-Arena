@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import type { GameTheme, PieceStyle, Cosmetic, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect, MusicTrack } from './types';
 
@@ -686,7 +688,7 @@ const VoidCollapseBoomEffect: React.FC<{ winnerCoords?: DOMRect, loserCoords?: D
         } as React.CSSProperties}
       />
       <div
-        className="absolute w-48 h-48 animate-boom-void-impact-container"
+        className="w-48 h-48 animate-boom-void-impact-container"
         style={{
           '--end-x': `${end.x}px`,
           '--end-y': `${end.y}px`,
@@ -772,17 +774,17 @@ const getVictoryAndBoomStyles = () => `
   }
 
   /* Boom: Ghostly Wail Impact */
-  @keyframes boom-ghost-wail {
-      from { transform: scale(0) rotate(0deg); opacity: 1; }
-      to { transform: scale(1) rotate(360deg); opacity: 0; }
+  @keyframes boom-ghost-wail-anim {
+      from { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+      to { transform: translate(-50%, -50%) scale(1) rotate(360deg); opacity: 0; }
   }
   .animate-boom-ghost-wail {
       position: fixed;
       left: var(--end-x); top: var(--end-y);
       width: 150px; height: 150px;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0);
       opacity: 0;
-      animation: boom-ghost-wail 0.8s ease-out forwards;
+      animation: boom-ghost-wail-anim 0.8s ease-out forwards;
       animation-delay: 0.85s;
   }
 
@@ -799,23 +801,24 @@ const getVictoryAndBoomStyles = () => `
       animation: boom-void-travel-anim 1s ease-in-out forwards;
   }
   .animate-boom-void-impact-container {
-      top: 0;
-      left: 0;
-      transform: translate(var(--end-x), var(--end-y)) translate(-50%, -50%);
+      position: fixed;
+      top: var(--end-y);
+      left: var(--end-x);
+      transform: translate(-50%, -50%);
       opacity: 0;
       animation: firework-fade-in 0.1s linear forwards;
       animation-delay: 0.85s;
   }
   @keyframes boom-void-black-hole-anim {
-    0% { transform: scale(0); opacity: 0.5; }
-    30% { transform: scale(0.6); opacity: 1; }
-    100% { transform: scale(0.5) rotate(90deg); opacity: 1; }
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0.5; }
+    30% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.5) rotate(90deg); opacity: 1; }
   }
   .animate-boom-void-black-hole {
     position: absolute; top: 50%; left: 50%;
     width: 100%; height: 100%;
     transform-origin: center;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(0);
     background: radial-gradient(circle, #2d0b45 10%, black 60%);
     border-radius: 50%;
     filter: blur(8px);
