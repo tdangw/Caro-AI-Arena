@@ -874,6 +874,7 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     { id: 'music_default', name: 'Celestial', url: 'assets/sounds/music.mp3' },
     { id: 'music_chill', name: 'Chillhop', url: 'assets/sounds/music_1.mp3' },
     { id: 'music_action', name: 'Action', url: 'assets/sounds/music_2.mp3' },
+    { id: 'music_synth', name: 'Synthwave', url: 'assets/sounds/music_3.mp3' },
 ];
 
 // --- All Cosmetics for the Shop ---

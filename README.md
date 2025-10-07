@@ -20,7 +20,9 @@ Tất cả các tài sản công cộng (hình ảnh, âm thanh) nên được �
 |   |   |-- move.mp3
 |   |   |-- win.mp3
 |   |   |-- lose.mp3
-|   |   |-- click.mp3
+|   |   |-- select.mp3
+|   |   |-- confirm.mp3
+|   |   |-- summary.mp3
 ```
 
 ## 2. Thêm Avatar Tùy chỉnh
@@ -74,7 +76,9 @@ Trò chơi đã được tích hợp sẵn logic để phát các hiệu ứng �
     *   **Đặt quân cờ:** `move.mp3`
     *   **Thắng trận:** `win.mp3`
     *   **Thua trận:** `lose.mp3`
-    *   **Nhấp chuột (UI):** `click.mp3`
+    *   **Nhấp chuột (UI):** `select.mp3`
+    *   **Xác nhận (UI):** `confirm.mp3`
+    *   **Hiện bảng tổng kết:** `summary.mp3`
 
 **Bước 2: Sao chép Tệp vào Thư mục `sounds`**
 

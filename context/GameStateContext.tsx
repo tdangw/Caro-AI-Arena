@@ -24,6 +24,8 @@ interface GameState {
   activeBoomEffect: BoomEffect;
   isSoundOn: boolean;
   isMusicOn: boolean;
+  soundVolume: number;
+  musicVolume: number;
   activeMusicUrl: string;
   lastProcessedGameId: string | null;
 }
@@ -43,12 +45,14 @@ interface GameStateContextType {
   equipBoomEffect: (effect: BoomEffect) => void;
   toggleSound: () => void;
   toggleMusic: () => void;
+  setSoundVolume: (volume: number) => void;
+  setMusicVolume: (volume: number) => void;
   equipMusic: (musicUrl: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'caroGameState_v8'; // Version bump for music selection
+const LOCAL_STORAGE_KEY = 'caroGameState_v9'; // Version bump for volume controls
 
 // Helper to avoid storing React components in JSON
 const sanitizeCosmetic = (cosmetic: any) => {
@@ -77,6 +81,8 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
           activeBoomEffect: { ...DEFAULT_BOOM_EFFECT, ...parsed.activeBoomEffect },
           isSoundOn: parsed.isSoundOn ?? true,
           isMusicOn: parsed.isMusicOn ?? true,
+          soundVolume: parsed.soundVolume ?? 1,
+          musicVolume: parsed.musicVolume ?? 1,
           activeMusicUrl: parsed.activeMusicUrl ?? MUSIC_TRACKS[0].url,
           emojiInventory: parsed.emojiInventory ?? {},
           botStats: parsed.botStats ?? {},
@@ -107,6 +113,8 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
       activeBoomEffect: DEFAULT_BOOM_EFFECT,
       isSoundOn: true,
       isMusicOn: true,
+      soundVolume: 1,
+      musicVolume: 1,
       activeMusicUrl: MUSIC_TRACKS[0].url,
       lastProcessedGameId: null,
     };
@@ -291,12 +299,20 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
     setGameState(prev => ({ ...prev, isMusicOn: !prev.isMusicOn }));
   }, []);
 
+  const setSoundVolume = useCallback((volume: number) => {
+    setGameState(prev => ({...prev, soundVolume: volume}));
+  }, []);
+
+  const setMusicVolume = useCallback((volume: number) => {
+    setGameState(prev => ({...prev, musicVolume: volume}));
+  }, []);
+
   const equipMusic = useCallback((musicUrl: string) => {
     setGameState(prev => ({ ...prev, activeMusicUrl: musicUrl }));
   }, []);
 
   return (
-    <GameStateContext.Provider value={{ gameState, setPlayerName, applyGameResult, spendCoins, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic, equipMusic }}>
+    <GameStateContext.Provider value={{ gameState, setPlayerName, applyGameResult, spendCoins, purchaseCosmetic, consumeEmoji, equipTheme, equipPiece, equipAvatar, equipEffect, equipVictoryEffect, equipBoomEffect, toggleSound, toggleMusic, setSoundVolume, setMusicVolume, equipMusic }}>
       {children}
     </GameStateContext.Provider>
   );

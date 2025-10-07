@@ -170,26 +170,26 @@ export const useGameLogic = (playerMark: Player = 'X', isPaused: boolean = false
             // startTurnTimer is called by the useEffect dependency change
         }
     }, [board, currentPlayer, isGameOver, checkWin, isDecidingFirst, totalGameTime]);
-
-    // FIX: This function is intended to be called for "Play Again" and now requires the first player to be specified.
-    // The initial game start is handled by the initial state logic, which sets isDecidingFirst to true.
-    const startGame = useCallback((firstPlayer: Player) => {
+    
+    const resetGameForRematch = useCallback(() => {
         stopTimers();
         setBoard(createEmptyBoard());
         setWinner(null);
         setIsGameOver(false);
         setWinningLine([]);
         setTotalGameTime(INITIAL_GAME_TIME);
-        setCurrentPlayer(firstPlayer);
-        setIsDecidingFirst(false);
+        setCurrentPlayer(null);
+        setIsDecidingFirst(true);
         historyRef.current = [];
         moveHistoryRef.current = [];
-        setGameId(`game_${Date.now()}`);
+        setGameId(null);
+        localStorage.removeItem(IN_PROGRESS_GAME_KEY);
     }, [stopTimers]);
 
     const beginGame = useCallback((firstPlayer: Player) => {
         setCurrentPlayer(firstPlayer);
         setIsDecidingFirst(false);
+        setGameId(`game_${Date.now()}`);
         // startTurnTimer will be called by the useEffect
     }, []);
 
@@ -241,7 +241,7 @@ export const useGameLogic = (playerMark: Player = 'X', isPaused: boolean = false
         winner,
         isGameOver,
         makeMove,
-        startGame,
+        resetGameForRematch,
         beginGame,
         winningLine,
         isDecidingFirst,

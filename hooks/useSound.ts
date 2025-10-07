@@ -1,13 +1,23 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useGameState } from '../context/GameStateContext';
 
-export type SoundEffect = 'move' | 'win' | 'lose' | 'click';
+export type SoundEffect = 'move' | 'win' | 'lose' | 'click' | 'announce_win' | 'announce_lose' | 'check' | 'first_move_player' | 'first_move_ai' | 'deciding' | 'boom' | 'select' | 'confirm' | 'summary';
 
 const soundFiles: Record<SoundEffect, string> = {
     move: 'assets/sounds/move.mp3',
     win: 'assets/sounds/win.mp3',
     lose: 'assets/sounds/lose.mp3',
     click: 'assets/sounds/click.mp3',
+    announce_win: 'assets/sounds/announce_win.mp3',
+    announce_lose: 'assets/sounds/announce_lose.mp3',
+    check: 'assets/sounds/check.mp3',
+    first_move_player: 'assets/sounds/first_move_player.mp3',
+    first_move_ai: 'assets/sounds/first_move_ai.mp3',
+    deciding: 'assets/sounds/deciding.mp3',
+    boom: 'assets/sounds/boom.mp3',
+    select: 'assets/sounds/select.mp3',
+    confirm: 'assets/sounds/confirm.mp3',
+    summary: 'assets/sounds/summary.mp3',
 };
 
 const audioCache = new Map<string, HTMLAudioElement>();
@@ -50,18 +60,17 @@ export const useSound = () => {
             try {
                 const audio = getAudio(soundFiles[sound]);
                 audio.currentTime = 0;
-                if (sound === 'click' || sound === 'move') {
-                    audio.volume = 0.7;
-                } else {
-                    audio.volume = 1.0;
-                }
+                
+                const baseVolume = (sound === 'click' || sound === 'move' || sound === 'select') ? 0.7 : 1.0;
+                audio.volume = gameState.soundVolume * baseVolume;
+
                 const promise = audio.play();
                 handlePlayPromise(promise, sound, soundFiles[sound]);
             } catch (error) {
                 console.error(`Could not play sound ${sound}:`, error);
             }
         }
-    }, [gameState.isSoundOn]);
+    }, [gameState.isSoundOn, gameState.soundVolume]);
 
     const playMusic = useCallback(() => {
         if (gameState.isMusicOn) {
@@ -74,13 +83,14 @@ export const useSound = () => {
                     }
                     musicPlayerRef.current = getAudio(gameState.activeMusicUrl, true);
                 }
+                musicPlayerRef.current.volume = gameState.musicVolume;
                 const promise = musicPlayerRef.current.play();
                 handlePlayPromise(promise, 'music', gameState.activeMusicUrl);
             } catch (error) {
                 console.error("Could not play music:", error)
             }
         }
-    }, [gameState.isMusicOn, gameState.activeMusicUrl]);
+    }, [gameState.isMusicOn, gameState.activeMusicUrl, gameState.musicVolume]);
 
     const stopMusic = useCallback(() => {
         if (musicPlayerRef.current) {
@@ -89,13 +99,19 @@ export const useSound = () => {
         }
     }, []);
 
+    // Effect to handle live volume changes
     useEffect(() => {
-        // This effect ensures music stops immediately if toggled off in settings,
-        // or if the track is changed while music is off.
+        if (musicPlayerRef.current) {
+            musicPlayerRef.current.volume = gameState.musicVolume;
+        }
+    }, [gameState.musicVolume]);
+
+    // This effect ensures music stops immediately if toggled off in settings
+    useEffect(() => {
         if (!gameState.isMusicOn) {
             stopMusic();
         }
-    }, [gameState.isMusicOn, gameState.activeMusicUrl, stopMusic]);
+    }, [gameState.isMusicOn, stopMusic]);
 
     // Effect to handle page visibility changes (e.g., switching tabs, minimizing, screen off on mobile)
     useEffect(() => {
@@ -107,7 +123,9 @@ export const useSound = () => {
                 }
             } else {
                 // If the page becomes visible again, resume music if it's supposed to be on
-                playMusic();
+                if(gameState.isMusicOn) {
+                    playMusic();
+                }
             }
         };
 
@@ -116,7 +134,7 @@ export const useSound = () => {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [playMusic]); // Depend on playMusic to get the latest function with correct state
+    }, [playMusic, gameState.isMusicOn]);
 
     return { playSound, playMusic, stopMusic };
 };

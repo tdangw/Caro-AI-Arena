@@ -24,7 +24,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
   
   const handlePurchase = (cosmetic: Cosmetic) => {
-    playSound('click');
+    playSound('confirm');
     if(purchaseCosmetic(cosmetic)) {
       // Potentially play a success sound
     }
@@ -32,7 +32,7 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleConfirmClick = (cosmetic: Cosmetic) => {
-    playSound('click');
+    playSound('select');
     setConfirmingPurchase(cosmetic);
   }
   
@@ -164,14 +164,14 @@ const Shop: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <p className="text-slate-300 mb-6">Are you sure you want to buy <strong className='text-white'>{confirmingPurchase.name}</strong> for <strong className='text-yellow-400'>{confirmingPurchase.price} 💰</strong>?</p>
                 <div className='flex justify-center gap-4'>
                     <button
-                        onClick={() => { playSound('click'); setConfirmingPurchase(null); }}
+                        onClick={() => { playSound('select'); setConfirmingPurchase(null); }}
                         className="bg-slate-600 hover:bg-slate-500 font-bold py-2 px-6 rounded-lg transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={() => handlePurchase(confirmingPurchase)}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-colors animate-confirm-glow"
                     >
                         Confirm
                     </button>

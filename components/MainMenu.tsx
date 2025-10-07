@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { BotProfile, Cosmetic, PieceStyle, PieceEffect, Avatar, GameTheme, CosmeticType, Emoji } from '../types';
+import type { BotProfile, Cosmetic, PieceStyle, PieceEffect, Avatar, GameTheme, Emoji } from '../types';
 import { useGameState } from '../context/GameStateContext';
 import { BOTS, ALL_COSMETICS, getXpForNextLevel, MUSIC_TRACKS } from '../constants';
 import Modal from './Modal';
@@ -66,7 +66,7 @@ const FeaturedItem: React.FC<{onGoToShop: () => void, itemOffset?: number}> = ({
             <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Featured Item</h3>
             <div className="w-20 h-20 flex items-center justify-center">{renderPreview(featuredItem)}</div>
             <p className="text-white font-semibold mt-1 text-sm h-10 flex items-center">{featuredItem.name}</p>
-            <button onClick={() => { playSound('click'); onGoToShop(); }} className="mt-2 text-xs bg-yellow-500 text-black font-bold px-3 py-1 rounded-full hover:bg-yellow-400 transition-colors">
+            <button onClick={() => { playSound('select'); onGoToShop(); }} className="mt-2 text-xs bg-yellow-500 text-black font-bold px-3 py-1 rounded-full hover:bg-yellow-400 transition-colors">
                 Go to Shop
             </button>
         </div>
@@ -156,19 +156,28 @@ const PlayerProfile: React.FC = () => {
     );
 }
 
-const BotCard: React.FC<{ bot: BotProfile; onChallenge: () => void; }> = ({ bot, onChallenge }) => (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center transition-all duration-300 flex flex-col backdrop-blur-sm hover:border-cyan-400">
-        <img src={bot.avatar} alt={bot.name} className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-slate-600 object-cover bg-slate-700"/>
-        <h3 className="text-lg font-bold text-white mb-1">{bot.name}</h3>
-        <p className="text-slate-400 text-xs mb-3 flex-grow">{bot.description}</p>
-        <button
-            onClick={onChallenge}
-            className="mt-auto w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-3 rounded-lg transition-all text-sm"
-        >
-            Challenge
-        </button>
-    </div>
-);
+const BotCard: React.FC<{ bot: BotProfile; onChallenge: () => void; }> = ({ bot, onChallenge }) => {
+    const borderColorMap = {
+        easy: 'border-green-500',
+        medium: 'border-purple-500',
+        hard: 'border-orange-500',
+    };
+    const borderColor = borderColorMap[bot.skillLevel];
+
+    return (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center transition-all duration-300 flex flex-col backdrop-blur-sm hover:border-cyan-400">
+            <img src={bot.avatar} alt={bot.name} className={`w-16 h-16 rounded-full mx-auto mb-3 border-2 ${borderColor} object-cover bg-slate-700`}/>
+            <h3 className="text-lg font-bold text-white mb-1">{bot.name}</h3>
+            <p className="text-slate-400 text-xs mb-3 flex-grow">{bot.description}</p>
+            <button
+                onClick={onChallenge}
+                className="mt-auto w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-3 rounded-lg transition-all text-sm"
+            >
+                Challenge
+            </button>
+        </div>
+    );
+};
 
 
 interface MainMenuProps {
@@ -179,30 +188,21 @@ interface MainMenuProps {
 
 const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInventory }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const { gameState, toggleSound, toggleMusic, equipMusic } = useGameState();
+  const { gameState, toggleSound, toggleMusic, equipMusic, setSoundVolume, setMusicVolume } = useGameState();
   const { playSound } = useSound();
 
   const handleChallengeClick = (bot: BotProfile) => {
-    playSound('click');
+    playSound('select');
     onStartGame(bot);
   }
 
   const handleSettingsClick = () => {
-    playSound('click');
+    playSound('select');
     setIsSettingsModalOpen(true);
-  }
-
-  const handleToggleSound = () => {
-      playSound('click');
-      toggleSound();
-  }
-  const handleToggleMusic = () => {
-      playSound('click');
-      toggleMusic();
   }
   
   const handleMusicSelect = (musicUrl: string) => {
-    playSound('click');
+    playSound('select');
     equipMusic(musicUrl);
   };
 
@@ -256,34 +256,48 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
        </div>
 
         <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Settings">
-             <div className="text-white divide-y divide-slate-700 -mx-6 -my-6">
-                <div className="p-6">
-                    <button
-                        onClick={handleToggleSound}
-                        className="w-full flex justify-between items-center transition-colors"
-                    >
-                        <span className="font-semibold text-slate-300">Sound</span>
-                        <span className={`font-bold ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+             <div className="space-y-4 text-white">
+                <div className="rounded-lg overflow-hidden border border-slate-700 divide-y divide-slate-700">
+                    <div className="flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors">
+                        <span className="font-semibold">Sound</span>
+                        <div className="flex-grow flex items-center gap-4 mx-4">
+                            <input
+                                type="range"
+                                min="0" max="1" step="0.01"
+                                value={gameState.soundVolume}
+                                onChange={(e) => setSoundVolume(Number(e.target.value))}
+                                disabled={!gameState.isSoundOn}
+                                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+                         <button onClick={() => { playSound('select'); toggleSound(); }} className={`font-bold w-12 text-center ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
                             {gameState.isSoundOn ? 'ON' : 'OFF'}
-                        </span>
-                    </button>
-                    <button
-                        onClick={handleToggleMusic}
-                        className="w-full flex justify-between items-center mt-4 transition-colors"
-                    >
-                        <span className="font-semibold text-slate-300">Music</span>
-                        <span className={`font-bold ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+                        </button>
+                    </div>
+                     <div className="flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors">
+                        <span className="font-semibold">Music</span>
+                         <div className="flex-grow flex items-center gap-4 mx-4">
+                            <input
+                                type="range"
+                                min="0" max="1" step="0.01"
+                                value={gameState.musicVolume}
+                                onChange={(e) => setMusicVolume(Number(e.target.value))}
+                                disabled={!gameState.isMusicOn}
+                                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+                        <button onClick={() => { playSound('select'); toggleMusic(); }} className={`font-bold w-12 text-center ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
                             {gameState.isMusicOn ? 'ON' : 'OFF'}
-                        </span>
-                    </button>
+                        </button>
+                    </div>
                 </div>
-                <div className="p-6">
-                    <h3 className="font-semibold text-slate-300 mb-3">Select Music</h3>
+                <div>
+                    <h3 className="font-semibold text-slate-300 mb-2 px-1">Select Music</h3>
                     <div>
                         <select
                             value={gameState.activeMusicUrl}
                             onChange={(e) => handleMusicSelect(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         >
                             {MUSIC_TRACKS.map(track => (
                                 <option key={track.id} value={track.url}>
@@ -293,8 +307,34 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStartGame, onGoToShop, onGoToInve
                         </select>
                     </div>
                 </div>
+                 <button onClick={() => setIsSettingsModalOpen(false)} className="w-full bg-slate-600 hover:bg-slate-500 font-bold py-3 rounded-lg transition-colors">Close</button>
             </div>
         </Modal>
+        <style>{`
+             input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                background: #22d3ee; /* cyan-400 */
+                cursor: pointer;
+                border-radius: 50%;
+            }
+            input[type="range"]::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                background: #22d3ee;
+                cursor: pointer;
+                border-radius: 50%;
+                border: none;
+            }
+            input[type="range"]:disabled::-webkit-slider-thumb {
+                background: #64748b; /* slate-500 */
+            }
+            input[type="range"]:disabled::-moz-range-thumb {
+                background: #64748b; /* slate-500 */
+            }
+        `}</style>
     </div>
   );
 };

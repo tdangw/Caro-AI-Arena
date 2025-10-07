@@ -121,7 +121,7 @@ const Inventory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     const ownedEmojiCount = gameState.emojiInventory[cosmetic.id] || 0;
                                     
                     const handleEquip = () => {
-                        playSound('click');
+                        playSound('select');
                         if (cosmetic.type === 'piece') {
                             equipPiece(cosmetic.item as PieceStyle);
                         } else if (cosmetic.type === 'avatar') {

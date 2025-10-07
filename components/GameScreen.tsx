@@ -4,9 +4,10 @@ import { getAIMove } from '../services/aiService';
 import { updateOpeningBook } from '../services/openingBook';
 import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emoji, PieceEffect, VictoryEffect, BoomEffect } from '../types';
 import Modal from './Modal';
-import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, ALL_COSMETICS, MUSIC_TRACKS } from '../constants';
+import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, ALL_COSMETICS, MUSIC_TRACKS, BOARD_SIZE, WINNING_LENGTH } from '../constants';
 import { useGameState } from '../context/GameStateContext';
-import { useSound } from '../hooks/useSound';
+// FIX: Import SoundEffect type for better type safety.
+import { useSound, type SoundEffect } from '../hooks/useSound';
 
 // --- Helper Hooks and Functions ---
 const useAnimatedCounter = (endValue: number, start: boolean, duration = 1200) => {
@@ -29,6 +30,7 @@ const useAnimatedCounter = (endValue: number, start: boolean, duration = 1200) =
              setCount(0);
         }
         return () => {
+            // FIX: cancelAnimationFrame requires the frame ID to be passed as an argument.
              if(frameRef.current) cancelAnimationFrame(frameRef.current);
         };
     }, [endValue, duration, start]);
@@ -40,6 +42,73 @@ const formatTime = (seconds: number) => {
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
+
+const checkForFour = (board: BoardState, lastMove: { row: number; col: number }, player: Player): boolean => {
+    if (!lastMove || !player) return false;
+    const { row, col } = lastMove;
+
+    const directions = [
+        { r: 0, c: 1 }, // Horizontal
+        { r: 1, c: 0 }, // Vertical
+        { r: 1, c: 1 }, // Diagonal \
+        { r: 1, c: -1 }, // Anti-diagonal /
+    ];
+
+    for (const dir of directions) {
+        let count = 1; // Count the piece just placed
+        // Count in one direction
+        for (let i = 1; i < WINNING_LENGTH; i++) {
+            const r = row + i * dir.r;
+            const c = col + i * dir.c;
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        // Count in the opposite direction
+        for (let i = 1; i < WINNING_LENGTH; i++) {
+            const r = row - i * dir.r;
+            const c = col - i * dir.c;
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        if (count === 4) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+const checkWinForSound = (board: BoardState, player: Player): boolean => {
+    const directions = [ { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }, { r: 1, c: -1 } ];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (board[r][c] === player) {
+                for (const dir of directions) {
+                    let count = 1;
+                    for (let i = 1; i < WINNING_LENGTH; i++) {
+                        const newR = r + i * dir.r;
+                        const newC = c + i * dir.c;
+                        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === player) {
+                            count++;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (count === WINNING_LENGTH) return true;
+                }
+            }
+        }
+    }
+    return false;
+};
+
 
 // --- GameCell Component ---
 interface GameCellProps {
@@ -141,16 +210,25 @@ interface PlayerInfoProps {
     align: 'left' | 'right';
     isCurrent: boolean;
     piece: PieceStyle;
+    skillLevel?: 'easy' | 'medium' | 'hard';
 }
-const PlayerInfo = React.forwardRef<HTMLDivElement, PlayerInfoProps>(({ name, avatar, level, player, align, isCurrent, piece }, ref) => {
+const PlayerInfo = React.forwardRef<HTMLDivElement, PlayerInfoProps>(({ name, avatar, level, player, align, isCurrent, piece, skillLevel }, ref) => {
     const PieceComponent = piece.component;
     const glowClass = isCurrent ? 'shadow-lg shadow-yellow-500/50' : '';
     const colorClass = player === 'X' ? 'text-cyan-400' : 'text-pink-500';
+    
+    const borderColorMap = {
+        easy: 'border-green-500',
+        medium: 'border-purple-500',
+        hard: 'border-orange-500',
+    };
+    const borderColor = skillLevel ? borderColorMap[skillLevel] : '';
+
 
     return (
         <div ref={ref} className={`flex items-center gap-3 relative ${align === 'right' ? 'flex-row-reverse' : ''}`}>
-            <img src={avatar} alt={`${name}'s avatar`} className={`w-14 h-14 rounded-full transition-all duration-300 ${glowClass} bg-slate-700 object-cover`} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />
-            <div className={`${align === 'right' ? 'text-right' : ''}`} style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+            <img src={avatar} alt={`${name}'s avatar`} className={`w-14 h-14 rounded-full transition-all duration-300 ${glowClass} bg-slate-700 object-cover ${skillLevel ? `border-2 ${borderColor}`: ''}`} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />
+            <div className={`${align === 'right' ? 'text-right' : ''} text-shadow`}>
                 <h3 className="font-bold text-white text-lg">{name}</h3>
                 <div className={`flex items-center gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
                     <p className="text-slate-300 text-sm">Lv. {level}</p>
@@ -311,19 +389,21 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
 };
 
 // --- First Move Animation ---
-const FirstMoveAnimation: React.FC<{pieces: {X: PieceStyle, O: PieceStyle}, onAnimationEnd: (firstPlayer: Player) => void, playerMark: Player}> = ({pieces, onAnimationEnd, playerMark}) => {
+const FirstMoveAnimation: React.FC<{pieces: {X: PieceStyle, O: PieceStyle}, onAnimationEnd: (firstPlayer: Player) => void, playerMark: Player, playSound: (sound: SoundEffect) => void}> = ({pieces, onAnimationEnd, playerMark, playSound}) => {
     const [winner, setWinner] = useState<Player | null>(null);
     const firstPlayer = useMemo(() => Math.random() < 0.5 ? 'X' : 'O', []);
     const PieceX = pieces.X.component;
     const PieceO = pieces.O.component;
 
     useEffect(() => {
+        playSound('deciding');
         const timer = setTimeout(() => {
             setWinner(firstPlayer);
+            playSound(firstPlayer === playerMark ? 'first_move_player' : 'first_move_ai');
             setTimeout(() => onAnimationEnd(firstPlayer), 1500);
         }, 1500);
         return () => clearTimeout(timer);
-    }, [firstPlayer, onAnimationEnd]);
+    }, [firstPlayer, onAnimationEnd, playSound, playerMark]);
     
     return (
         <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-lg z-20">
@@ -426,8 +506,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     const playerMark: Player = 'X';
     const aiMark: Player = 'O';
 
-    const { board, currentPlayer, winner, isGameOver, makeMove, startGame, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory, gameId } = useGameLogic(playerMark, isPaused);
-    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic, spendCoins, applyGameResult } = useGameState();
+    const { board, currentPlayer, winner, isGameOver, makeMove, resetGameForRematch, beginGame, winningLine, isDecidingFirst, totalGameTime, resign, undoMove, canUndo, moveHistory, gameId } = useGameLogic(playerMark, isPaused);
+    const { gameState, toggleSound, toggleMusic, consumeEmoji, equipMusic, spendCoins, applyGameResult, setSoundVolume, setMusicVolume } = useGameState();
     const { playSound } = useSound();
 
     const [aiThinkingCell, setAiThinkingCell] = useState<{row: number, col: number} | null>(null);
@@ -448,7 +528,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     const isAiThinkingRef = useRef(false);
     const playerAvatarRef = useRef<HTMLDivElement>(null);
     const botAvatarRef = useRef<HTMLDivElement>(null);
-    
+    const lastMoveHistoryLength = useRef(0);
+
     const botStats = gameState.botStats[bot.id] || { wins: 0, losses: 0, draws: 0 };
 
     const ownedEmojis = useMemo(() => {
@@ -485,17 +566,24 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     
 
     const handleGameReset = useCallback(() => {
-        playSound('click');
+        playSound('select');
         setShowGameOverModal(false);
         setGameOverMessage(null);
-        // FIX: Reset victory effect states to prevent them from persisting into the next game.
         setShowVictoryEffects(false);
         setBoomCoords(null);
         setWinnerPlayer(null);
-        // FIX: The startGame function was called without arguments, but it requires a `Player` to be passed to determine who starts the new game.
-        startGame(playerMark);
-    }, [startGame, playSound, playerMark]);
+        resetGameForRematch();
+    }, [resetGameForRematch, playSound]);
     
+    useEffect(() => {
+        if (boomCoords) {
+            const timer = setTimeout(() => {
+                playSound('boom');
+            }, 850); // Match animation delay
+            return () => clearTimeout(timer);
+        }
+    }, [boomCoords, playSound]);
+
     // Effect to calculate avatar positions for boom effects, only when needed.
     useEffect(() => {
         if (showVictoryEffects && winnerPlayer) {
@@ -515,16 +603,17 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
             const timedOutPlayer = winner === 'timeout' ? currentPlayer : null;
             const result = timedOutPlayer === playerMark ? 'loss' : winner === playerMark ? 'win' : winner === 'draw' ? 'draw' : 'loss';
             
-            // Apply the game result immediately to update stats in real-time
             if (bot?.id) {
                 applyGameResult(result, bot.id, gameId);
             }
 
             if (result === 'win') {
                 playSound('win');
+                playSound('announce_win');
                 setGameOverMessage('You Win!');
             } else if (result === 'loss') {
                 playSound('lose');
+                playSound('announce_lose');
                 setGameOverMessage('You Lose!');
             } else {
                 setGameOverMessage('Draw!');
@@ -545,6 +634,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
             const modalTimer = setTimeout(() => {
                 setShowVictoryEffects(false);
                 setShowGameOverModal(true);
+                playSound('summary');
             }, 7000); // 2s for message + 5s for effects
 
             return () => {
@@ -559,6 +649,22 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         makeMove(row, col);
         setLastMove({row, col});
     }, [makeMove, playSound]);
+
+    useEffect(() => {
+        if (moveHistory.length > lastMoveHistoryLength.current && !isGameOver) {
+            const lastMoveMade = moveHistory[moveHistory.length - 1];
+            const playerWhoMoved = board[lastMoveMade.row][lastMoveMade.col];
+            if (playerWhoMoved) {
+                // Explicitly check if the move was NOT a winning one before playing the "check" sound.
+                const isAWin = checkWinForSound(board, playerWhoMoved);
+                const isAFour = checkForFour(board, lastMoveMade, playerWhoMoved);
+                if (isAFour && !isAWin) {
+                    playSound('check');
+                }
+            }
+        }
+        lastMoveHistoryLength.current = moveHistory.length;
+    }, [moveHistory, board, isGameOver, playSound]);
 
     useEffect(() => {
         if (!isDecidingFirst && bot && currentPlayer === aiMark && !isGameOver && !isAiThinkingRef.current) {
@@ -593,19 +699,19 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     };
     
     const handleMusicSelect = (musicUrl: string) => {
-        playSound('click');
+        playSound('select');
         equipMusic(musicUrl);
     };
 
     const handleUndoClick = () => {
-        playSound('click');
+        playSound('select');
         if (canUndo && gameState.coins >= 20) {
             setIsUndoModalOpen(true);
         }
     };
     
     const handleConfirmUndo = () => {
-        playSound('click');
+        playSound('confirm');
         if (spendCoins(20)) {
             undoMove();
         }
@@ -633,15 +739,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
 
         <div className="w-full max-w-[85vmin] mx-auto relative z-10 flex flex-col justify-center">
             <header className="flex flex-col justify-center items-center w-full relative mb-4">
-                <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400 text-shadow">
                     Caro AI Arena
                 </h1>
                 <div className="relative flex items-center justify-center gap-4 mt-2">
-                    <button onClick={() => { playSound('click'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                    <button onClick={() => { playSound('select'); setIsSettingsOpen(true); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Settings"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
                     <button onClick={handleUndoClick} disabled={!canUndo || gameState.coins < 20} className="relative bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Undo">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H9"></path></svg>
                     </button>
-                    <button onClick={() => { playSound('click'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+                    <button onClick={() => { playSound('select'); setEmojiPanelOpen(p => !p); }} className="bg-slate-800/80 p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Emotes"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
                     {isEmojiPanelOpen && (
                         <div 
                             className="absolute top-full mt-4 bg-slate-800/90 backdrop-blur-sm p-2 rounded-lg flex flex-wrap justify-center gap-2 animate-fade-in-down z-30" 
@@ -668,7 +774,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                  {aiEmoji && <div className="absolute right-16 top-0 text-5xl animate-emote-gentle-fall z-30">{aiEmoji}</div>}
                  <div className="flex justify-between items-end px-2 mb-[4px] -mt-px">
                     <PlayerInfo ref={playerAvatarRef} name={playerInfo.name} avatar={playerInfo.avatar.url} level={playerInfo.level} align="left" player="X" isCurrent={currentPlayer === playerMark} piece={pieces.X} />
-                     <div className="text-center pb-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+                     <div className="text-center pb-1 text-shadow">
                         <div className="text-white font-mono text-xs tracking-wider whitespace-nowrap" title={`vs ${bot.name}`}>
                             <span className="text-green-400">Win {botStats.wins}</span>
                              - 
@@ -676,7 +782,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                         </div>
                         <div className="text-white font-mono text-xl tracking-wider">{formatTime(totalGameTime)}</div>
                     </div>
-                    <PlayerInfo ref={botAvatarRef} name={bot.name} avatar={bot.avatar} level={bot.level} align="right" player="O" isCurrent={currentPlayer === aiMark} piece={aiPiece} />
+                    <PlayerInfo ref={botAvatarRef} name={bot.name} avatar={bot.avatar} level={bot.level} align="right" player="O" isCurrent={currentPlayer === aiMark} piece={aiPiece} skillLevel={bot.skillLevel} />
                 </div>
                 <div className="w-full mx-auto">
                     <SmoothTimerBar 
@@ -687,7 +793,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                     />
                     <div className="mt-px relative bg-black/40 backdrop-blur-lg rounded-xl p-2 border border-white/10 shadow-lg">
                         <GameBoard board={board} onCellClick={handleCellClick} winningLine={winningLine} pieces={allPieces} aiThinkingCell={aiThinkingCell} theme={theme} lastMove={lastMove} effect={activeEffect} />
-                        {isDecidingFirst && <FirstMoveAnimation pieces={allPieces} onAnimationEnd={beginGame} playerMark={playerMark} />}
+                        {isDecidingFirst && <FirstMoveAnimation pieces={allPieces} onAnimationEnd={beginGame} playerMark={playerMark} playSound={playSound} />}
                     </div>
                 </div>
             </main>
@@ -710,14 +816,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                 <p className="text-slate-300 mb-6">Undoing your last move will cost <strong className='text-yellow-400'>20 💰</strong>. Are you sure?</p>
                 <div className='flex justify-center gap-4'>
                     <button
-                        onClick={() => { playSound('click'); setIsUndoModalOpen(false); }}
+                        onClick={() => { playSound('select'); setIsUndoModalOpen(false); }}
                         className="bg-slate-600 hover:bg-slate-500 font-bold py-2 px-6 rounded-lg transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleConfirmUndo}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-colors animate-confirm-glow"
                     >
                         Confirm
                     </button>
@@ -728,24 +834,38 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Settings">
              <div className="space-y-4 text-white">
                 <div className="rounded-lg overflow-hidden border border-slate-700 divide-y divide-slate-700">
-                     <button
-                        onClick={() => { playSound('click'); toggleSound(); }}
-                        className="w-full flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors"
-                    >
+                    <div className="flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors">
                         <span className="font-semibold">Sound</span>
-                        <span className={`font-bold ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+                        <div className="flex-grow flex items-center gap-4 mx-4">
+                            <input
+                                type="range"
+                                min="0" max="1" step="0.01"
+                                value={gameState.soundVolume}
+                                onChange={(e) => setSoundVolume(Number(e.target.value))}
+                                disabled={!gameState.isSoundOn}
+                                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+                         <button onClick={() => { playSound('select'); toggleSound(); }} className={`font-bold w-12 text-center ${gameState.isSoundOn ? 'text-cyan-400' : 'text-slate-500'}`}>
                             {gameState.isSoundOn ? 'ON' : 'OFF'}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => { playSound('click'); toggleMusic(); }}
-                        className="w-full flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors"
-                    >
+                        </button>
+                    </div>
+                     <div className="flex justify-between items-center px-4 py-3 hover:bg-slate-700/50 transition-colors">
                         <span className="font-semibold">Music</span>
-                        <span className={`font-bold ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
+                         <div className="flex-grow flex items-center gap-4 mx-4">
+                            <input
+                                type="range"
+                                min="0" max="1" step="0.01"
+                                value={gameState.musicVolume}
+                                onChange={(e) => setMusicVolume(Number(e.target.value))}
+                                disabled={!gameState.isMusicOn}
+                                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+                        <button onClick={() => { playSound('select'); toggleMusic(); }} className={`font-bold w-12 text-center ${gameState.isMusicOn ? 'text-cyan-400' : 'text-slate-500'}`}>
                             {gameState.isMusicOn ? 'ON' : 'OFF'}
-                        </span>
-                    </button>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <h3 className="font-semibold text-slate-300 mb-2 px-1">Select Music</h3>
@@ -767,12 +887,43 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                     <button onClick={() => { onOpenShop(); setIsSettingsOpen(false); }} className="w-full bg-purple-600 hover:bg-purple-500 font-bold py-3 rounded-lg transition-colors">Shop</button>
                     <button onClick={() => { onOpenInventory(); setIsSettingsOpen(false); }} className="w-full bg-indigo-600 hover:bg-indigo-500 font-bold py-3 rounded-lg transition-colors">Inventory</button>
                 </div>
-                <button onClick={() => { playSound('click'); resign(); setIsSettingsOpen(false); }} className="w-full bg-red-600 hover:bg-red-500 font-bold py-3 rounded-lg transition-colors">Resign Game</button>
-                <button onClick={() => { playSound('click'); setIsSettingsOpen(false); }} className="w-full bg-slate-600 hover:bg-slate-500 font-bold py-3 rounded-lg transition-colors">Close</button>
+                <button onClick={() => { playSound('select'); resign(); setIsSettingsOpen(false); }} className="w-full bg-red-600 hover:bg-red-500 font-bold py-3 rounded-lg transition-colors">Resign Game</button>
+                <button onClick={() => { playSound('select'); setIsSettingsOpen(false); }} className="w-full bg-slate-600 hover:bg-slate-500 font-bold py-3 rounded-lg transition-colors">Close</button>
             </div>
         </Modal>
 
         <style>{`
+            @keyframes confirm-glow {
+                0% { box-shadow: 0 0 0px rgba(74, 222, 128, 0); }
+                50% { box-shadow: 0 0 15px rgba(74, 222, 128, 0.7); }
+                100% { box-shadow: 0 0 0px rgba(74, 222, 128, 0); }
+            }
+            .animate-confirm-glow {
+                animation: confirm-glow 1.5s ease-in-out infinite;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                background: #22d3ee; /* cyan-400 */
+                cursor: pointer;
+                border-radius: 50%;
+            }
+            input[type="range"]::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                background: #22d3ee;
+                cursor: pointer;
+                border-radius: 50%;
+                border: none;
+            }
+            input[type="range"]:disabled::-webkit-slider-thumb {
+                background: #64748b; /* slate-500 */
+            }
+            input[type="range"]:disabled::-moz-range-thumb {
+                background: #64748b; /* slate-500 */
+            }
             @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             .animate-spin-slow { animation: spin-slow 10s linear infinite; }
             @keyframes particle {
