@@ -94,7 +94,7 @@ export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.error("Failed to parse game state from localStorage", error);
     }
     return {
-      coins: 10000, // Increased for testing
+      coins: 0, // Increased for testing
       playerName: `Player_${Math.floor(1000 + Math.random() * 9000)}`,
       wins: 0,
       losses: 0,

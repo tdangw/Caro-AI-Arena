@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { getAIMove } from '../services/aiService';
@@ -6,7 +8,6 @@ import type { Player, BoardState, GameTheme, PieceStyle, BotProfile, Avatar, Emo
 import Modal from './Modal';
 import { COIN_REWARD, XP_REWARD, TURN_TIME, getXpForNextLevel, EMOJIS, PIECE_STYLES, EffectStyles, VictoryAndBoomStyles, ALL_COSMETICS, MUSIC_TRACKS, BOARD_SIZE, WINNING_LENGTH } from '../constants';
 import { useGameState } from '../context/GameStateContext';
-// FIX: Import SoundEffect type for better type safety.
 import { useSound, type SoundEffect } from '../hooks/useSound';
 
 // --- Helper Hooks and Functions ---
@@ -30,7 +31,6 @@ const useAnimatedCounter = (endValue: number, start: boolean, duration = 1200) =
              setCount(0);
         }
         return () => {
-            // FIX: cancelAnimationFrame requires the frame ID to be passed as an argument.
              if(frameRef.current) cancelAnimationFrame(frameRef.current);
         };
     }, [endValue, duration, start]);
@@ -391,7 +391,7 @@ const GameOverScreen: React.FC<{show: boolean, winner: Player | 'draw' | 'timeou
 // --- First Move Animation ---
 const FirstMoveAnimation: React.FC<{pieces: {X: PieceStyle, O: PieceStyle}, onAnimationEnd: (firstPlayer: Player) => void, playerMark: Player, playSound: (sound: SoundEffect) => void}> = ({pieces, onAnimationEnd, playerMark, playSound}) => {
     const [winner, setWinner] = useState<Player | null>(null);
-    const firstPlayer = useMemo(() => Math.random() < 0.5 ? 'X' : 'O', []);
+    const [firstPlayer] = useState<Player>(() => (Math.random() < 0.5 ? 'X' : 'O'));
     const PieceX = pieces.X.component;
     const PieceO = pieces.O.component;
 
@@ -403,7 +403,10 @@ const FirstMoveAnimation: React.FC<{pieces: {X: PieceStyle, O: PieceStyle}, onAn
             setTimeout(() => onAnimationEnd(firstPlayer), 1500);
         }, 1500);
         return () => clearTimeout(timer);
-    }, [firstPlayer, onAnimationEnd, playSound, playerMark]);
+    // This effect should only run once on mount. The unstable playSound function is acceptable here
+    // as the component is short-lived and sound settings are unlikely to change during the animation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [firstPlayer, onAnimationEnd, playerMark]);
     
     return (
         <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-lg z-20">
@@ -579,7 +582,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         if (boomCoords) {
             const timer = setTimeout(() => {
                 playSound('boom');
-            }, 850); // Match animation delay
+            }, 350); // Play sound 0.5s earlier to better sync with impact
             return () => clearTimeout(timer);
         }
     }, [boomCoords, playSound]);
@@ -635,7 +638,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
                 setShowVictoryEffects(false);
                 setShowGameOverModal(true);
                 playSound('summary');
-            }, 7000); // 2s for message + 5s for effects
+            }, 5000); // 2s for message + 5s for effects
 
             return () => {
                 clearTimeout(victoryEffectsTimer);
@@ -667,29 +670,50 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
     }, [moveHistory, board, isGameOver, playSound]);
 
     useEffect(() => {
-        if (!isDecidingFirst && bot && currentPlayer === aiMark && !isGameOver && !isAiThinkingRef.current) {
-            isAiThinkingRef.current = true;
-            if (Math.random() < 0.15) {
-                setTimeout(() => showEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)], false), 500);
-            }
-
-            const onThinking = (move: { row: number, col: number }) => {
-                setAiThinkingCell(move);
-            };
-
-            getAIMove(board, aiMark, bot.skillLevel, onThinking).then(({ row, col }) => {
-                if (row !== -1 && !isGameOver) {
-                    setAiThinkingCell(null);
-                    fullMakeMove(row, col);
-                }
-            }).catch((err) => {
-                console.error("AI failed to make a move:", err);
-                setAiThinkingCell(null);
-            }).finally(() => {
-                isAiThinkingRef.current = false;
-            });
+        // This effect manages the AI's turn.
+        // If it's not the AI's turn, or the game is not in a playable state,
+        // we ensure the "thinking" lock is released and do nothing.
+        if (isPaused || isDecidingFirst || isGameOver || currentPlayer !== aiMark) {
+            isAiThinkingRef.current = false;
+            return;
         }
-    }, [currentPlayer, isGameOver, fullMakeMove, bot, aiMark, isDecidingFirst, board]);
+
+        // If we're here, it's the AI's turn. If it's already thinking, we wait.
+        if (isAiThinkingRef.current) {
+            return;
+        }
+
+        // It's the AI's turn and it's not thinking yet. Let's start.
+        isAiThinkingRef.current = true; // Set the lock
+
+        if (Math.random() < 0.15) {
+            setTimeout(() => showEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)], false), 500);
+        }
+
+        const onThinking = (move: { row: number; col: number }) => {
+            setAiThinkingCell(move);
+        };
+
+        getAIMove(board, aiMark, bot.skillLevel, onThinking).then(({ row, col }) => {
+            // When the AI returns a move, we check if it's still locked for thinking.
+            // This prevents making a move if the game state changed (e.g., reset)
+            // while the AI was processing.
+            if (row !== -1 && isAiThinkingRef.current && !isGameOver) {
+                setAiThinkingCell(null);
+                fullMakeMove(row, col);
+                // The lock is NOT released here. It will be released when this effect
+                // re-runs for the next player's turn, which is a safer approach.
+            } else {
+                // If the state changed, just release the lock.
+                isAiThinkingRef.current = false;
+                setAiThinkingCell(null);
+            }
+        }).catch((err) => {
+            console.error("AI failed to make a move:", err);
+            setAiThinkingCell(null);
+            isAiThinkingRef.current = false; // Ensure lock is released on error
+        });
+    }, [currentPlayer, isGameOver, board, isPaused, isDecidingFirst, aiMark, bot, fullMakeMove, showEmoji]);
 
 
     const handleCellClick = (row: number, col: number) => {
