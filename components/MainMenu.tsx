@@ -92,6 +92,9 @@ const PlayerProfile: React.FC = () => {
     const xpForNextLevel = getXpForNextLevel(playerLevel);
     const xpPercentage = (playerXp / xpForNextLevel) * 100;
 
+    const totalGames = wins + losses + draws;
+    const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
 
     return (
         <div className="group relative bg-slate-800/50 border border-slate-700 rounded-xl p-4 w-full h-full transition-all duration-300 hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/10 overflow-hidden">
@@ -147,8 +150,8 @@ const PlayerProfile: React.FC = () => {
                         <p className="text-slate-400 text-xs uppercase tracking-wider">Losses</p>
                     </div>
                     <div className="transition-transform duration-200 hover:scale-110 p-2 rounded-lg">
-                        <p className="text-cyan-400 font-bold text-xl">{wins + losses + draws}</p>
-                        <p className="text-slate-400 text-xs uppercase tracking-wider">Total</p>
+                        <p className="text-cyan-400 font-bold text-xl">{winRate}%</p>
+                        <p className="text-slate-400 text-xs uppercase tracking-wider">Win Rate</p>
                     </div>
                 </div>
             </div>

@@ -576,6 +576,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ bot, onExit, theme, pieces, pla
         setBoomCoords(null);
         setWinnerPlayer(null);
         resetGameForRematch();
+        const randomPiece = PIECE_STYLES[Math.floor(Math.random() * PIECE_STYLES.length)];
+        setAiPiece(randomPiece);
     }, [resetGameForRematch, playSound]);
     
     useEffect(() => {
